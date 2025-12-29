@@ -19,10 +19,14 @@ import { AIAnalysisPanel } from './components/AIAnalysisPanel';
 import type { PatientWithAnalysis, MedicalImage, AIAnalysis } from './lib/database.types';
 import { uiStyles } from './lib/theme';
 import { DataProvider, useDataContext } from './lib/dataContext';
+import { PatientOnboarding } from './components/PatientOnboarding';
+import { PatientQA } from './components/PatientQA';
 
-type PageId = 'dashboard' | 'workstation' | 'reports' | 'referrals' | 'followup' | 'research' | 'audit';
+type PageId = 'enroll' | 'qa' | 'dashboard' | 'workstation' | 'reports' | 'referrals' | 'followup' | 'research' | 'audit';
 
 const navItems: { id: PageId; label: string; icon: JSX.Element }[] = [
+  { id: 'enroll', label: '患者建档', icon: <ClipboardList className="h-4 w-4" /> },
+  { id: 'qa', label: '患者问答', icon: <ClipboardList className="h-4 w-4 rotate-90" /> },
   { id: 'dashboard', label: '首页仪表盘', icon: <Home className="h-4 w-4" /> },
   { id: 'workstation', label: '筛查工作台', icon: <Layers className="h-4 w-4" /> },
   { id: 'reports', label: '报告中心', icon: <FileText className="h-4 w-4" /> },
@@ -306,7 +310,7 @@ function WorkstationPage({
 }
 
 function App() {
-  const [activePage, setActivePage] = useState<PageId>('workstation');
+  const [activePage, setActivePage] = useState<PageId>('enroll');
   const [selectedPatient, setSelectedPatient] = useState<PatientWithAnalysis | null>(null);
   const [selectedImage, setSelectedImage] = useState<MedicalImage | null>(null);
   const [selectedAnalysis, setSelectedAnalysis] = useState<AIAnalysis | null>(null);
@@ -326,6 +330,10 @@ function App() {
 
   const pageContent = useMemo(() => {
     switch (activePage) {
+      case 'enroll':
+        return <PatientOnboarding />;
+      case 'qa':
+        return <PatientQA />;
       case 'dashboard':
         return <DashboardPage />;
       case 'reports':
