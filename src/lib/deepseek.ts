@@ -28,6 +28,50 @@ ${ctx.riskLevel ? `风险等级：${ctx.riskLevel}` : '结合临床，建议进�
 3. 必要时随访影像`;
 };
 
+export async function askDeepseek(question: string): Promise<string> {
+  const apiKey = apiConfig.deepseek.apiKey;
+  const baseUrl = apiConfig.deepseek.baseUrl || 'https://api.deepseek.com';
+
+  if (!apiKey) {
+    return '抱歉，API 配置未完成，无法回答问题。';
+  }
+
+  try {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: '你是医疗助手，请用专业、友好的中文回答患者关于肺结核筛查的问题。',
+          },
+          { role: 'user', content: question },
+        ],
+        temperature: 0.7,
+        max_tokens: 1024,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn('DeepSeek API error:', response.status);
+      return '抱歉，网络错误，请稍后再试。';
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content;
+    if (!text) return '抱歉，未能生成回答。';
+    return text.trim();
+  } catch (error) {
+    console.warn('DeepSeek call failed:', error);
+    return '抱歉，请求失败，请稍后再试。';
+  }
+}
+
 export async function generateReportDraft(ctx: DraftContext): Promise<string> {
   const apiKey = apiConfig.deepseek.apiKey;
   const baseUrl = apiConfig.deepseek.baseUrl || 'https://api.deepseek.com';
