@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { Send, ShieldAlert, MessageCircle, Sparkles } from 'lucide-react';
+import { Send, ShieldAlert, MessageCircle, Sparkles, Pause } from 'lucide-react';
 import { uiStyles } from '../lib/theme';
+import { askDeepseek } from '../lib/deepseek';
+import { DigitalHumanAvatar } from './DigitalHuman';
+import { speakCN, stopSpeaking } from '../lib/voice';
 
 interface ChatItem {
   sender: 'user' | 'bot';
@@ -15,25 +18,29 @@ const quickQuestions = [
   '痰检阴性就能排除结核吗？',
 ];
 
-function buildAnswer(question: string): string {
-  return [
-    `Q: ${question}`,
-    '1) 回答：肺结核主要通过飞沫核传播，常见症状包括咳嗽、咳痰、低热、盗汗、体重下降等。',
-    '2) 建议：若症状持续≥2周或出现咳血/胸痛，请尽快到结核门诊或呼吸科就诊，完善痰检/影像/IGRA。',
-    '3) 安全提示：如出现咳血量多、高热不退、呼吸困难，请立即就医或急诊处理。',
-  ].join('\n');
-}
-
 export function PatientQA() {
   const [messages, setMessages] = useState<ChatItem[]>([
-    { sender: 'bot', text: '您好，这里是广西医科大学 TB 科普智能体。提供科普与就医建议，不替代医生诊断。' },
+    { sender: 'bot', text: '你好，这里是广西医科大 TB 科智能助手，提供科普与流程建议，不替代线下诊断。' },
   ]);
   const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
 
-  const send = (text: string) => {
-    if (!text.trim()) return;
-    setMessages((prev) => [...prev, { sender: 'user', text }, { sender: 'bot', text: buildAnswer(text) }]);
+  const send = async (text: string) => {
+    const q = text.trim();
+    if (!q) return;
+    setMessages((prev) => [...prev, { sender: 'user', text: q }]);
     setInput('');
+    setLoading(true);
+
+    const reply = await askDeepseek(q);
+    setMessages((prev) => [...prev, { sender: 'bot', text: reply }]);
+    speakCN(
+      reply,
+      () => setSpeaking(true),
+      () => setSpeaking(false)
+    );
+    setLoading(false);
   };
 
   return (
@@ -46,7 +53,7 @@ export function PatientQA() {
           </div>
           <div className="flex items-center gap-2 text-[11px] text-gray-500">
             <ShieldAlert className="h-3 w-3 text-amber-400" />
-            提供科普与就医建议，不替代诊断
+            仅供科普与流程建议，不替代医生诊断
           </div>
         </div>
 
@@ -67,40 +74,75 @@ export function PatientQA() {
               </div>
             </div>
           ))}
+          {loading && <div className="text-xs text-gray-500">生成回答中...</div>}
         </div>
 
         <div className="p-3 border-t border-gray-700 space-y-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="请输入您的结核相关问题..."
+            placeholder="请输入你的结核相关问题..."
             className={uiStyles.input.textarea + ' min-h-[80px]'}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                send(input);
+              }
+            }}
           />
-          <button onClick={() => send(input)} className={uiStyles.button.primary + ' flex items-center gap-2 justify-center'}>
-            <Send className="h-4 w-4" />
-            发送
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => send(input)}
+              disabled={loading}
+              className={
+                uiStyles.button.primary +
+                ' flex items-center gap-2 justify-center disabled:opacity-50 disabled:cursor-not-allowed'
+              }
+            >
+              <Send className="h-4 w-4" />
+              发送
+            </button>
+            <button
+              onClick={() => {
+                stopSpeaking();
+                setSpeaking(false);
+              }}
+              className={uiStyles.button.secondary + ' flex items-center gap-2 justify-center'}
+            >
+              <Pause className="h-4 w-4" />
+              停止朗读
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-3">
-        <div className="flex items-center gap-2 text-gray-200 text-sm">
-          <Sparkles className="h-4 w-4 text-blue-400" />
-          快捷问题
+      <div className="space-y-3">
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
+          <DigitalHumanAvatar speaking={speaking} />
+          <div className="text-xs text-gray-500 mt-2 text-center">
+            状态：{speaking ? '数字人正在朗读' : '待机'}
+          </div>
         </div>
-        <div className="space-y-2">
-          {quickQuestions.map((q) => (
-            <button
-              key={q}
-              onClick={() => send(q)}
-              className="w-full text-left px-3 py-2 rounded bg-gray-900 hover:bg-gray-800 text-sm text-gray-200 border border-gray-700"
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-        <div className="text-xs text-gray-500 border border-gray-700 rounded p-2">
-          提示：本助手提供科普和就医建议，紧急情况（咳血量多、高热不退、呼吸困难）请立即就医或急诊。
+
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-3">
+          <div className="flex items-center gap-2 text-gray-200 text-sm">
+            <Sparkles className="h-4 w-4 text-blue-400" />
+            快捷提问
+          </div>
+          <div className="space-y-2">
+            {quickQuestions.map((q) => (
+              <button
+                key={q}
+                onClick={() => send(q)}
+                className="w-full text-left px-3 py-2 rounded bg-gray-900 hover:bg-gray-800 text-sm text-gray-200 border border-gray-700"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+          <div className="text-xs text-gray-500 border border-gray-700 rounded p-2">
+            提示：若出现高热、咯血、呼吸困难等紧急症状，请立即线下就医。
+          </div>
         </div>
       </div>
     </div>

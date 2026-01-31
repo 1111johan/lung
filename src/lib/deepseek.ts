@@ -1,117 +1,93 @@
-import { apiConfig } from './apiConfig';
+const API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
+const API_BASE =
+  import.meta.env.VITE_DEEPSEEK_API_BASE ||
+  import.meta.env.VITE_DEEPSEEK_BASE_URL ||
+  'https://api.deepseek.com';
+const MODEL = import.meta.env.VITE_DEEPSEEK_MODEL || 'deepseek-chat';
 
-interface DraftContext {
-  patientName?: string;
-  riskLevel?: string;
-  tbProbability?: number;
-  findings?: Array<{ location?: string; type?: string; size?: string | number }>;
+interface DeepseekChoice {
+  message?: { content?: string };
+}
+
+interface DeepseekResp {
+  choices?: DeepseekChoice[];
+}
+
+export async function askDeepseek(question: string, context?: string): Promise<string> {
+  if (!API_KEY) {
+    return buildFallback(question, context);
+  }
+
+  const messages = [
+    {
+      role: 'system',
+      content:
+        '你是一名资深的肺结核及呼吸感染领域临床专家，同时熟悉影像学（胸片/CT）、实验室检查（IGRA/PPD/痰涂片/培养/分子检测）和随访流程。' +
+        '请用正式、专业的中文回答用户问题，结构清晰，优先给出关键信息、鉴别要点、下一步检查或随访建议，并提醒必要的线下就医与感染防控。' +
+        '不要使用特殊符号或列表编号符号（如 # * ·），直接用完整句子或简单分段表述。' +
+        '。',
+    },
+    {
+      role: 'user',
+      content: context ? `患者背景：${context}\n问题：${question}` : question,
+    },
+  ];
+
+  const resp = await fetch(`${API_BASE}/v1/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages,
+      temperature: 0.4,
+      max_tokens: 600,
+    }),
+  });
+
+  if (!resp.ok) {
+    return '当前 AI 服务不可用，请稍后重试或联系管理员。';
+  }
+
+  const data = (await resp.json()) as DeepseekResp;
+  const content = data.choices?.[0]?.message?.content?.trim();
+  return content || buildFallback(question, context);
+}
+
+function buildFallback(question: string, context?: string) {
+  const ctx = context ? `\n患者背景：${context}` : '';
+  return `收到你的问题：${question}${ctx}\n建议：请完善症状、既往史和影像资料，必要时前往线下门诊就诊。`;
+}
+
+interface ReportDraftInput {
+  patientName: string;
+  riskLevel: string;
+  findings?: string | { location?: string; type?: string; size?: string | number }[];
   symptoms?: string[];
   history?: string[];
+  tbProbability?: number;
 }
 
-const fallbackDraft = (ctx: DraftContext) => {
+export async function generateReportDraft(payload: ReportDraftInput): Promise<string> {
+  const { patientName, riskLevel, tbProbability } = payload;
   const findingsText =
-    ctx.findings && ctx.findings.length > 0
-      ? ctx.findings
-          .map((f) => `${f.location || '肺野'}可见${f.type || '异常'}${f.size ? `，约 ${f.size}` : ''}`)
+    Array.isArray(payload.findings)
+      ? payload.findings
+          .map((f) => {
+            const loc = f.location ? `部位:${f.location}` : '';
+            const t = f.type || '';
+            const s = f.size ? `大小:${f.size}` : '';
+            return [loc, t, s].filter(Boolean).join(' ');
+          })
+          .filter(Boolean)
           .join('；')
-      : '双肺纹理增多，未见明确活动性病灶。';
-  return `影像表现：
-${findingsText}
+      : payload.findings || '未提供';
 
-初步印象：
-${ctx.riskLevel ? `风险等级：${ctx.riskLevel}` : '结合临床，建议进一步评估'}${ctx.tbProbability ? `（TB 概率 ${ctx.tbProbability}%）` : ''}
+  const symptomsText = payload.symptoms?.join('，') || '未提供';
+  const historyText = payload.history?.join('，') || '未提供';
 
-建议：
-1. 痰涂片与培养
-2. 结核免疫学检查（IGRA/PPD）
-3. 必要时随访影像`;
-};
-
-export async function askDeepseek(question: string): Promise<string> {
-  const apiKey = apiConfig.deepseek.apiKey;
-  const baseUrl = apiConfig.deepseek.baseUrl || 'https://api.deepseek.com';
-
-  if (!apiKey) {
-    return '抱歉，API 配置未完成，无法回答问题。';
-  }
-
-  try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'system',
-            content: '你是医疗助手，请用专业、友好的中文回答患者关于肺结核筛查的问题。',
-          },
-          { role: 'user', content: question },
-        ],
-        temperature: 0.7,
-        max_tokens: 1024,
-      }),
-    });
-
-    if (!response.ok) {
-      console.warn('DeepSeek API error:', response.status);
-      return '抱歉，网络错误，请稍后再试。';
-    }
-
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content;
-    if (!text) return '抱歉，未能生成回答。';
-    return text.trim();
-  } catch (error) {
-    console.warn('DeepSeek call failed:', error);
-    return '抱歉，请求失败，请稍后再试。';
-  }
-}
-
-export async function generateReportDraft(ctx: DraftContext): Promise<string> {
-  const apiKey = apiConfig.deepseek.apiKey;
-  const baseUrl = apiConfig.deepseek.baseUrl || 'https://api.deepseek.com';
-  if (!apiKey) {
-    console.warn('DeepSeek API key not set, using fallback draft.');
-    return fallbackDraft(ctx);
-  }
-
-  try {
-    const prompt = `你是肺结核影像与CDSS助手。根据提供的发现/症状/史生成中文结构化报告草稿，包含：影像表现、初步印象、建议三段，句子简洁、带可编辑占位。输入：${JSON.stringify(
-      ctx
-    )}`;
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: '你是肺结核影像辅助诊疗助手，输出中文简洁报告草稿。' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 512,
-      }),
-    });
-
-    if (!response.ok) {
-      console.warn('DeepSeek API error:', response.status, await response.text());
-      return fallbackDraft(ctx);
-    }
-
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content;
-    if (!text) return fallbackDraft(ctx);
-    return text.trim();
-  } catch (error) {
-    console.warn('DeepSeek call failed, using fallback draft:', error);
-    return fallbackDraft(ctx);
-  }
+  const q = `请生成肺结核筛查报告草稿（50-120字），包含：临床印象、影像要点、后续检查/随访建议、安全提示。语言简洁、面向医生。\n患者：${patientName}\n风险等级：${riskLevel}\nTB概率：${tbProbability ?? '未知'}\n影像要点：${findingsText}\n症状：${symptomsText}\n既往史：${historyText}`;
+  return askDeepseek(q);
 }

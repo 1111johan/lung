@@ -14,7 +14,7 @@ export function Header() {
         </h1>
       </div>
       <div className="text-sm text-gray-400 flex items-center gap-4">
-        <span>当前连接：{APP_CONFIG.hospital} {APP_CONFIG.department}</span>
+        <span>当前连接：广西医科大 PACS</span>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
           <span className="text-blue-400">Agent 在线</span>

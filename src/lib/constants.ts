@@ -5,7 +5,7 @@
 
 // 应用信息
 export const APP_CONFIG = {
-  name: 'GXMU TB-Agent',
+  name: '广西医科大 TB-Agent',
   fullName: '广西医科大学肺结核 AI 筛查工作站',
   version: '1.0.0',
   hospital: '广西医科大一附院',
@@ -87,4 +87,3 @@ export const PAGE_TITLES = {
   patient: '患者详情',
   report: '报告管理',
 } as const;
-

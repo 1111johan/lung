@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
-import { ClipboardCheck, Sparkles, Shield, Database, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ClipboardCheck, Sparkles, Shield, Database, CheckCircle2, AlertTriangle, Play } from 'lucide-react';
 import { uiStyles } from '../lib/theme';
+import { DigitalHumanAvatar } from './DigitalHuman';
+import { speakCN } from '../lib/voice';
+import { createPatientProfile } from '../lib/supabaseService';
+import { useDataContext } from '../lib/dataContext';
 
 type SymptomKey =
   | 'cough_2w'
@@ -79,6 +83,7 @@ export function PatientOnboarding() {
   const [aiInput, setAiInput] = useState('咳嗽三周，夜间盗汗，午后低热，家属最近确诊结核');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [matched, setMatched] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
 
   const riskScore = useMemo(() => {
     let score = 0;
@@ -138,15 +143,49 @@ export function PatientOnboarding() {
     setMatched(true);
   };
 
-  const handleCreateProfile = () => {
-    const pid = `GX-2025${Math.floor(Math.random() * 9000 + 1000)}`;
-    setProfile({
-      patientId: pid,
-      createdAt: new Date().toLocaleString(),
-      riskLevel,
-      symptomCount: symptoms.length,
-      labStatus: `${labs.ppd}/${labs.igra}/${labs.sputum}`,
-    });
+  const { addPatientFromSupabase } = useDataContext();
+
+  const handleCreateProfile = async () => {
+    const pid = `GX-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 9000 + 1000)}`;
+
+    const genderMapped = basic.gender?.includes('女') ? 'female' : 'male';
+    const hasHistory = Boolean(
+      basic.tbHistory && (basic.tbHistory.includes('链') || basic.tbHistory.includes('有') || basic.tbHistory.includes('是'))
+    );
+
+    try {
+      const saved = await createPatientProfile({
+        patient_code: pid,
+        name: basic.name || '未填写姓名',
+        gender: genderMapped as 'male' | 'female',
+        age: Number(basic.age) || 0,
+        region: basic.region || '广西',
+        contact_phone: basic.phone || null,
+        tb_history: hasHistory,
+        ppd_test_result: labs.ppd || null,
+        sputum_test_result: labs.sputum || null,
+        chief_complaint: aiInput || null,
+      });
+
+      addPatientFromSupabase(saved);
+
+      setProfile({
+        patientId: saved.patient_code,
+        createdAt: new Date(saved.created_at).toLocaleString(),
+        riskLevel,
+        symptomCount: symptoms.length,
+        labStatus: `${labs.ppd}/${labs.igra}/${labs.sputum}`,
+      });
+    } catch (error) {
+      console.error('create patient failed, keeping local profile', error);
+      setProfile({
+        patientId: pid,
+        createdAt: new Date().toLocaleString(),
+        riskLevel,
+        symptomCount: symptoms.length,
+        labStatus: `${labs.ppd}/${labs.igra}/${labs.sputum}`,
+      });
+    }
   };
 
   const resetAll = () => {
@@ -323,6 +362,27 @@ export function PatientOnboarding() {
               <span>待创建档案后展示写入信息</span>
             </div>
           )}
+        </div>
+
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 min-h-[200px] space-y-3">
+          <div className="flex items-center gap-2 text-gray-200 text-sm">
+            <Shield className="h-4 w-4 text-teal-400" />
+            数字人预览
+          </div>
+          <DigitalHumanAvatar speaking={speaking} />
+          <button
+            className={uiStyles.button.secondary + ' flex items-center gap-2 justify-center w-full text-sm'}
+            onClick={() => {
+              speakCN(
+                '您好，我是肺结核筛查数字助手，已为您记录档案信息，请继续完善检查与随访计划。',
+                () => setSpeaking(true),
+                () => setSpeaking(false)
+              );
+            }}
+          >
+            <Play className="h-4 w-4" />
+            让数字人播报问候
+          </button>
         </div>
       </div>
     </div>

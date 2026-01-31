@@ -1,6 +1,7 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { PatientWithAnalysis } from './database.types';
+import { fetchPatientsWithAnalysis } from './supabaseService';
 
 export type ReportStatus = 'draft' | 'pending_sign' | 'signed' | 'retake';
 export type ReferralStatus = 'pending' | 'generated' | 'submitted';
@@ -47,6 +48,9 @@ interface DataContextValue {
   referrals: ReferralEntry[];
   followups: FollowupEntry[];
   auditLogs: AuditEntry[];
+  loadingSupabase: boolean;
+  reloadFromSupabase: () => Promise<void>;
+  addPatientFromSupabase: (patient: PatientWithAnalysis) => void;
   saveReportDraft: (patientId: string, content: string) => void;
   rejectForRetake: (patientId: string) => void;
   confirmPositive: (patientId: string) => void;
@@ -243,11 +247,37 @@ const initialAudit: AuditEntry[] = [
 ];
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [patients] = useState<PatientWithAnalysis[]>(initialPatients);
+  const [patients, setPatients] = useState<PatientWithAnalysis[]>(initialPatients);
   const [reports, setReports] = useState<ReportEntry[]>(initialReports);
   const [referrals, setReferrals] = useState<ReferralEntry[]>(initialReferrals);
   const [followups, setFollowups] = useState<FollowupEntry[]>(initialFollowups);
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>(initialAudit);
+  const [loadingSupabase, setLoadingSupabase] = useState(false);
+
+  const reloadFromSupabase = async () => {
+    setLoadingSupabase(true);
+    try {
+      const remotePatients = await fetchPatientsWithAnalysis();
+      if (remotePatients?.length) {
+        setPatients(remotePatients);
+      }
+    } catch (err) {
+      console.warn('Supabase load failed, falling back to mock data', err);
+    } finally {
+      setLoadingSupabase(false);
+    }
+  };
+
+  useEffect(() => {
+    reloadFromSupabase();
+  }, []);
+
+  const addPatientFromSupabase = (patient: PatientWithAnalysis) => {
+    setPatients((prev) => {
+      const filtered = prev.filter((p) => p.id !== patient.id);
+      return [patient, ...filtered];
+    });
+  };
 
   const appendAudit = (entry: Omit<AuditEntry, 'id' | 'time'>) => {
     setAuditLogs((prev) => [
@@ -327,13 +357,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       referrals,
       followups,
       auditLogs,
+      loadingSupabase,
+      reloadFromSupabase,
+      addPatientFromSupabase,
       saveReportDraft,
       rejectForRetake,
       confirmPositive,
       updateReferralStatus,
       updateFollowupStatus,
     }),
-    [patients, reports, referrals, followups, auditLogs]
+    [patients, reports, referrals, followups, auditLogs, loadingSupabase, reloadFromSupabase, addPatientFromSupabase]
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
