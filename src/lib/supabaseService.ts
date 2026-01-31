@@ -22,7 +22,8 @@ export async function fetchPatientsWithAnalysis(): Promise<PatientWithRelations[
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data || []).map(attachRiskFromAnalysis);
+  const typed = (data || []) as PatientWithRelations[];
+  return typed.map(attachRiskFromAnalysis);
 }
 
 export async function createPatientProfile(payload: PatientInsert): Promise<PatientWithRelations> {

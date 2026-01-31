@@ -46,7 +46,8 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
           const analysis = patient.medical_images?.[0]?.ai_analyses?.[0];
           const riskLevel = (analysis?.risk_level || 'low') as 'high' | 'medium' | 'low';
           const riskScore = analysis?.risk_score || 0;
-          const findings = analysis?.findings?.[0];
+          const findingsArray = Array.isArray(analysis?.findings) ? analysis.findings : [];
+          const findings = findingsArray[0] as any;
 
           return (
             <div
