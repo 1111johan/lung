@@ -8,10 +8,11 @@ type PatientWithRelations = PatientWithAnalysis;
 function attachRiskFromAnalysis(patient: PatientWithRelations): PatientWithRelations {
   const firstImage = patient.medical_images?.[0];
   const firstAnalysis = firstImage?.ai_analyses?.[0];
+  const riskLevel = firstAnalysis?.risk_level ?? patient.risk_level ?? 'low';
   return {
     ...patient,
     risk_score: firstAnalysis?.risk_score ?? patient.risk_score ?? 0,
-    risk_level: (firstAnalysis?.risk_level as any) ?? patient.risk_level ?? 'low',
+    risk_level: riskLevel,
   };
 }
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { PatientWithAnalysis } from './database.types';
 import { fetchPatientsWithAnalysis } from './supabaseService';
@@ -254,7 +254,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>(initialAudit);
   const [loadingSupabase, setLoadingSupabase] = useState(false);
 
-  const reloadFromSupabase = async () => {
+  const reloadFromSupabase = useCallback(async () => {
     setLoadingSupabase(true);
     try {
       const remotePatients = await fetchPatientsWithAnalysis();
@@ -266,89 +266,108 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoadingSupabase(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     reloadFromSupabase();
-  }, []);
+  }, [reloadFromSupabase]);
 
-  const addPatientFromSupabase = (patient: PatientWithAnalysis) => {
+  const addPatientFromSupabase = useCallback((patient: PatientWithAnalysis) => {
     setPatients((prev) => {
       const filtered = prev.filter((p) => p.id !== patient.id);
       return [patient, ...filtered];
     });
-  };
+  }, []);
 
-  const appendAudit = (entry: Omit<AuditEntry, 'id' | 'time'>) => {
+  const appendAudit = useCallback((entry: Omit<AuditEntry, 'id' | 'time'>) => {
     setAuditLogs((prev) => [
       { id: createId('audit'), time: nowText(), ...entry },
       ...prev,
     ]);
-  };
+  }, []);
 
-  const saveReportDraft = (patientId: string, content: string) => {
-    const existing = reports.find((r) => r.patientId === patientId);
-    const updated: ReportEntry = existing
-      ? { ...existing, status: 'draft', updatedAt: nowText(), content }
-      : { id: createId('R'), patientId, status: 'draft', type: 'screening', updatedAt: nowText(), content };
-    setReports((prev) => {
-      const others = prev.filter((r) => r.id !== updated.id);
-      return [updated, ...others];
-    });
-    appendAudit({ actor: 'rad_A', action: '保存草稿', target: updated.id, detail: '报告草稿已更新' });
-  };
+  const saveReportDraft = useCallback(
+    (patientId: string, content: string) => {
+      let updated: ReportEntry | undefined;
+      setReports((prev) => {
+        const existing = prev.find((r) => r.patientId === patientId);
+        updated = existing
+          ? { ...existing, status: 'draft', updatedAt: nowText(), content }
+          : { id: createId('R'), patientId, status: 'draft', type: 'screening', updatedAt: nowText(), content };
+        const others = prev.filter((r) => r.id !== (updated as ReportEntry).id);
+        return [updated as ReportEntry, ...others];
+      });
+      appendAudit({ actor: 'rad_A', action: '保存草稿', target: (updated as ReportEntry).id, detail: '报告草稿已更新' });
+    },
+    [appendAudit]
+  );
 
-  const rejectForRetake = (patientId: string) => {
-    const existing = reports.find((r) => r.patientId === patientId);
-    if (existing) {
-      setReports((prev) => prev.map((r) => (r.id === existing.id ? { ...r, status: 'retake', updatedAt: nowText() } : r)));
-    } else {
-      const created: ReportEntry = { id: createId('R'), patientId, status: 'retake', type: 'screening', updatedAt: nowText() };
-      setReports((prev) => [created, ...prev]);
-    }
-    appendAudit({ actor: 'rad_A', action: '驳回重拍', target: patientId, detail: '影像需重拍' });
-  };
+  const rejectForRetake = useCallback(
+    (patientId: string) => {
+      let targetId = patientId;
+      setReports((prev) => {
+        const existing = prev.find((r) => r.patientId === patientId);
+        if (existing) {
+          targetId = existing.id;
+          return prev.map((r) => (r.id === existing.id ? { ...r, status: 'retake', updatedAt: nowText() } : r));
+        }
+        const created: ReportEntry = { id: createId('R'), patientId, status: 'retake', type: 'screening', updatedAt: nowText() };
+        targetId = created.id;
+        return [created, ...prev];
+      });
+      appendAudit({ actor: 'rad_A', action: '驳回重拍', target: targetId, detail: '影像需重拍' });
+    },
+    [appendAudit]
+  );
 
-  const confirmPositive = (patientId: string) => {
-    // 更新报告状态
-    const existing = reports.find((r) => r.patientId === patientId);
-    const updatedReport: ReportEntry = existing
-      ? { ...existing, status: 'pending_sign', updatedAt: nowText() }
-      : { id: createId('R'), patientId, status: 'pending_sign', type: 'screening', updatedAt: nowText() };
-    setReports((prev) => {
-      const others = prev.filter((r) => r.id !== updatedReport.id);
-      return [updatedReport, ...others];
-    });
+  const confirmPositive = useCallback(
+    (patientId: string) => {
+      let reportId = '';
+      setReports((prev) => {
+        const existing = prev.find((r) => r.patientId === patientId);
+        const updated: ReportEntry = existing
+          ? { ...existing, status: 'pending_sign', updatedAt: nowText() }
+          : { id: createId('R'), patientId, status: 'pending_sign', type: 'screening', updatedAt: nowText() };
+        reportId = updated.id;
+        const others = prev.filter((r) => r.id !== updated.id);
+        return [updated, ...others];
+      });
 
-    // 生成转诊单
-    const referral: ReferralEntry = {
-      id: createId('REF'),
-      patientId,
-      status: 'pending',
-      missingFields: ['联系电话'],
-      updatedAt: nowText(),
-    };
-    setReferrals((prev) => [referral, ...prev]);
+      const referral: ReferralEntry = {
+        id: createId('REF'),
+        patientId,
+        status: 'pending',
+        missingFields: ['联系电话'],
+        updatedAt: nowText(),
+      };
+      setReferrals((prev) => [referral, ...prev]);
 
-    // 创建随访节点
-    const fu1: FollowupEntry = { id: createId('FU'), patientId, title: '2周电话随访', dueAt: '2025-01-12', status: 'pending' };
-    const fu2: FollowupEntry = { id: createId('FU'), patientId, title: '1个月痰培养回传', dueAt: '2025-02-02', status: 'pending' };
-    setFollowups((prev) => [fu1, fu2, ...prev]);
+      const fu1: FollowupEntry = { id: createId('FU'), patientId, title: '2周电话随访', dueAt: '2025-01-12', status: 'pending' };
+      const fu2: FollowupEntry = { id: createId('FU'), patientId, title: '1个月痰培养回传', dueAt: '2025-02-02', status: 'pending' };
+      setFollowups((prev) => [fu1, fu2, ...prev]);
 
-    appendAudit({ actor: 'rad_A', action: '确认阳性', target: patientId, detail: '生成转诊/随访' });
-  };
+      appendAudit({ actor: 'rad_A', action: '确认阳性', target: reportId || patientId, detail: '生成转诊/随访' });
+    },
+    [appendAudit]
+  );
 
-  const updateReferralStatus = (id: string, status: ReferralStatus) => {
-    setReferrals((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status, missingFields: status === 'submitted' ? [] : r.missingFields, updatedAt: nowText() } : r))
-    );
-    appendAudit({ actor: 'nurse_B', action: '更新转诊', target: id, detail: status });
-  };
+  const updateReferralStatus = useCallback(
+    (id: string, status: ReferralStatus) => {
+      setReferrals((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status, missingFields: status === 'submitted' ? [] : r.missingFields, updatedAt: nowText() } : r))
+      );
+      appendAudit({ actor: 'nurse_B', action: '更新转诊', target: id, detail: status });
+    },
+    [appendAudit]
+  );
 
-  const updateFollowupStatus = (id: string, status: FollowupStatus) => {
-    setFollowups((prev) => prev.map((f) => (f.id === id ? { ...f, status } : f)));
-    appendAudit({ actor: 'nurse_B', action: '更新随访', target: id, detail: status });
-  };
+  const updateFollowupStatus = useCallback(
+    (id: string, status: FollowupStatus) => {
+      setFollowups((prev) => prev.map((f) => (f.id === id ? { ...f, status } : f)));
+      appendAudit({ actor: 'nurse_B', action: '更新随访', target: id, detail: status });
+    },
+    [appendAudit]
+  );
 
   const value = useMemo<DataContextValue>(
     () => ({
@@ -366,12 +385,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
       updateReferralStatus,
       updateFollowupStatus,
     }),
-    [patients, reports, referrals, followups, auditLogs, loadingSupabase, reloadFromSupabase, addPatientFromSupabase]
+    [
+      patients,
+      reports,
+      referrals,
+      followups,
+      auditLogs,
+      loadingSupabase,
+      reloadFromSupabase,
+      addPatientFromSupabase,
+      saveReportDraft,
+      rejectForRetake,
+      confirmPositive,
+      updateReferralStatus,
+      updateFollowupStatus,
+    ]
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useDataContext() {
   const ctx = useContext(DataContext);
   if (!ctx) throw new Error('useDataContext must be used within DataProvider');

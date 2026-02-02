@@ -18,9 +18,7 @@ function findMouthController(scene: THREE.Object3D) {
   scene.traverse((obj) => {
     const mesh = obj as THREE.Mesh;
     if (!mesh.isMesh) return;
-    const dict = (mesh as any).morphTargetDictionary as
-      | Record<string, number>
-      | undefined;
+    const dict = mesh.morphTargetDictionary as Record<string, number> | undefined;
     if (!dict) return;
 
     const names = Object.keys(dict).map((k) => k.toLowerCase());
@@ -44,7 +42,7 @@ function findMouthController(scene: THREE.Object3D) {
   let jawBone: THREE.Bone | null = null;
   scene.traverse((obj) => {
     const sk = obj as THREE.SkinnedMesh;
-    if (!(sk as any).isSkinnedMesh) return;
+    if (!sk.isSkinnedMesh) return;
     const bones = sk.skeleton?.bones ?? [];
     const hit = bones.find((b) => b.name.toLowerCase().includes('jaw'));
     if (hit && !jawBone) jawBone = hit;
@@ -54,7 +52,7 @@ function findMouthController(scene: THREE.Object3D) {
 }
 
 export function DoctorModel({ speaking }: { speaking: boolean }) {
-  const gltf = useGLTF('/models/doctor.glb') as any;
+  const gltf = useGLTF('/models/doctor.glb') as { scene: THREE.Group };
   const group = useRef<THREE.Group>(null);
 
   const { morphMesh, morphIndex, jawBone } = useMemo(
@@ -82,18 +80,15 @@ export function DoctorModel({ speaking }: { speaking: boolean }) {
       );
     }
 
-    if (
-      morphMesh &&
-      morphIndex !== null &&
-      (morphMesh as any).morphTargetInfluences
-    ) {
-      const influences = (morphMesh as any)
-        .morphTargetInfluences as number[];
-      influences[morphIndex] = THREE.MathUtils.lerp(
-        influences[morphIndex] ?? 0,
-        mouth,
-        0.35
-      );
+    if (morphMesh && morphIndex !== null) {
+      const influences = (morphMesh as THREE.Mesh & { morphTargetInfluences?: number[] }).morphTargetInfluences;
+      if (Array.isArray(influences)) {
+        influences[morphIndex] = THREE.MathUtils.lerp(
+          influences[morphIndex] ?? 0,
+          mouth,
+          0.35
+        );
+      }
     }
 
     if (jawBone) {

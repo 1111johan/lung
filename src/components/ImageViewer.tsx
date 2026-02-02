@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Maximize2, Ruler, Eye, EyeOff, ZoomIn, ZoomOut } from 'lucide-react';
 import type { MedicalImage, AIAnalysis } from '../lib/database.types';
+import type { AnalysisFinding } from '../lib/analysisTypes';
 import { getImageStatusStyle } from '../lib/theme';
 import { DEFAULT_WINDOW_LEVEL, ZOOM_CONFIG, DATE_FORMAT } from '../lib/constants';
 
@@ -24,6 +25,10 @@ export function ImageViewer({ image, analysis }: ImageViewerProps) {
       </section>
     );
   }
+
+  const overlayFindings: AnalysisFinding[] = Array.isArray(analysis?.findings)
+    ? (analysis.findings as AnalysisFinding[])
+    : [];
 
   return (
     <section className="relative bg-black flex flex-col">
@@ -98,17 +103,17 @@ export function ImageViewer({ image, analysis }: ImageViewerProps) {
             </div>
           </div>
 
-          {aiOverlay && analysis && analysis.findings && analysis.findings.length > 0 && (
+          {aiOverlay && overlayFindings.length > 0 && (
             <div className="absolute inset-0 pointer-events-none">
-              {analysis.findings.map((finding: any, idx: number) => (
+              {overlayFindings.map((finding, idx) => (
                 <div
                   key={idx}
                   className="absolute border-2 border-red-500 bg-red-500/20 rounded"
                   style={{
-                    left: `${finding.x || 30 + idx * 10}%`,
-                    top: `${finding.y || 20 + idx * 15}%`,
-                    width: `${finding.width || 12}%`,
-                    height: `${finding.height || 15}%`,
+                    left: `${finding.x ?? 30 + idx * 10}%`,
+                    top: `${finding.y ?? 20 + idx * 15}%`,
+                    width: `${finding.width ?? 12}%`,
+                    height: `${finding.height ?? 15}%`,
                   }}
                 >
                   <div className="absolute -top-6 left-0 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap">
