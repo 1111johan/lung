@@ -71,7 +71,13 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
   const formatDate = (value: string) =>
     new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-  const tasks = [
+  const tasks: {
+    title: string;
+    count: number;
+    action: string;
+    page: PageId;
+    filter?: Record<string, string | undefined>;
+  }[] = [
     {
       title: '待审核影像',
       count: patients.filter((p) => p.medical_images?.some((m) => m.status === 'reviewing')).length,
