@@ -35,7 +35,7 @@ const navItems: { id: PageId; label: string; icon: JSX.Element }[] = [
   { id: 'audit', label: '系统与审计', icon: <Shield className="h-4 w-4" /> },
 ];
 
-function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Record<string, string>) => void }) {
+function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Record<string, string | undefined>) => void }) {
   const { patients, followups, reports } = useDataContext();
   const highRisk = patients.filter((p) => p.risk_level === 'high').length;
   const overdue = followups.filter((f) => f.status === 'overdue').length;
@@ -102,7 +102,7 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
     },
   ];
 
-  const drillTo = (page: PageId, filter?: Record<string, string>) => {
+  const drillTo = (page: PageId, filter?: Record<string, string | undefined>) => {
     onNavigate(page, filter);
   };
 
