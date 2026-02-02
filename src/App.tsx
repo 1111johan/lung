@@ -35,7 +35,7 @@ const navItems: { id: PageId; label: string; icon: JSX.Element }[] = [
   { id: 'audit', label: '系统与审计', icon: <Shield className="h-4 w-4" /> },
 ];
 
-function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Record<string, string | undefined>) => void }) {
+function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Record<string, string>) => void }) {
   const { patients, followups, reports } = useDataContext();
   const highRisk = patients.filter((p) => p.risk_level === 'high').length;
   const overdue = followups.filter((f) => f.status === 'overdue').length;
@@ -76,7 +76,7 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
     count: number;
     action: string;
     page: PageId;
-    filter?: Record<string, string | undefined>;
+    filter?: Record<string, string>;
   }[] = [
     {
       title: '待审核影像',
@@ -108,8 +108,13 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
     },
   ];
 
-  const drillTo = (page: PageId, filter?: Record<string, string | undefined>) => {
-    onNavigate(page, filter);
+  const drillTo = (page: PageId, filter?: Record<string, string>) => {
+    const sanitized = filter
+      ? Object.fromEntries(
+          Object.entries(filter).filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+        )
+      : undefined;
+    onNavigate(page, sanitized);
   };
 
   const kpiCards = [
@@ -655,7 +660,7 @@ function App() {
       case 'qa':
         return <PatientQA />;
       case 'dashboard':
-        return <DashboardPage onNavigate={(page) => setActivePage(page)} />;
+        return <DashboardPage onNavigate={(page, _filter) => setActivePage(page)} />;
       case 'reports':
         return <ReportsPage />;
       case 'referrals':
