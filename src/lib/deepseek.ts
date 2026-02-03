@@ -13,9 +13,18 @@ interface DeepseekResp {
   choices?: DeepseekChoice[];
 }
 
+function sanitizeAnswer(text: string) {
+  const withoutStars = text.replace(/\*/g, '');
+  return withoutStars
+    .split('\n')
+    .map((line) => line.replace(/^\s*(#{1,6}|[-•]+)\s+/, ''))
+    .join('\n')
+    .trim();
+}
+
 export async function askDeepseek(question: string, context?: string): Promise<string> {
   if (!API_KEY) {
-    return buildFallback(question, context);
+    return sanitizeAnswer(buildFallback(question, context));
   }
 
   const messages = [
@@ -48,12 +57,12 @@ export async function askDeepseek(question: string, context?: string): Promise<s
   });
 
   if (!resp.ok) {
-    return '当前 AI 服务不可用，请稍后重试或联系管理员。';
+    return sanitizeAnswer('当前 AI 服务不可用，请稍后重试或联系管理员。');
   }
 
   const data = (await resp.json()) as DeepseekResp;
   const content = data.choices?.[0]?.message?.content?.trim();
-  return content || buildFallback(question, context);
+  return sanitizeAnswer(content || buildFallback(question, context));
 }
 
 function buildFallback(question: string, context?: string) {
