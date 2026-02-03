@@ -73,7 +73,7 @@ export function ImageViewer({ image, analysis }: ImageViewerProps) {
 
       <div className="flex-1 flex items-center justify-center p-8 relative">
         <div
-          className="relative viewer-canvas shadow-2xl overflow-hidden"
+          className="relative viewer-canvas viewer-frame shadow-2xl overflow-hidden"
           style={{
             width: '80%',
             aspectRatio: '4/3',
@@ -84,7 +84,7 @@ export function ImageViewer({ image, analysis }: ImageViewerProps) {
             <img
               src={image.image_url}
               alt="DICOM case"
-              className="absolute inset-0 w-full h-full object-contain bg-transparent"
+              className="absolute inset-0 w-full h-full object-contain bg-transparent rounded-[20px]"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">

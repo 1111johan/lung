@@ -631,7 +631,7 @@ function WorkstationPage({
   }, [patients, onSelectPatient, selectedPatient]);
 
   return (
-    <main className="flex-1 flex overflow-hidden bg-[rgb(var(--bg))]">
+    <main className="workstation-scope flex-1 flex overflow-hidden">
       <PatientQueue
         onSelectPatient={onSelectPatient}
         selectedPatientId={selectedPatient?.id || null}
@@ -703,16 +703,16 @@ function App() {
       <div className="flex flex-col h-screen bg-[rgb(var(--bg))] text-gray-100">
         <Header />
 
-        <div className="bg-[rgb(var(--bg))] border-b border-[rgb(var(--border))] px-4">
+        <div className="nav-bar px-4">
           <div className="flex gap-2 overflow-x-auto py-2">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActivePage(item.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded text-sm border ${
+                className={`flex items-center gap-2 px-3 py-2 rounded text-sm border transition-colors ${
                   activePage === item.id
                     ? 'bg-[rgb(var(--card))] border-teal-600 text-teal-200'
-                    : 'bg-[rgb(var(--bg))] border-[rgb(var(--border))] text-gray-400 hover:text-gray-200'
+                    : 'bg-[rgb(var(--bg))] border-[rgb(var(--border))] text-gray-400 hover:text-gray-200 hover:bg-[rgb(var(--card))]'
                 }`}
               >
                 {item.icon}

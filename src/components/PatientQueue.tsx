@@ -40,7 +40,7 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
   };
 
   return (
-    <aside className={`${uiStyles.sidebar.default} aurora-card patient-queue`}>
+    <aside className={`${uiStyles.sidebar.default} patient-queue workstation-panel workstation-panel-strong`}>
       <div className="p-3 border-b border-gray-700 font-medium flex justify-between items-center">
         <span className="text-gray-200">待筛查 ({sortedPatients.length})</span>
         {highRiskCount > 0 && (
@@ -60,12 +60,15 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
           const findingsArray = filterFindings(rawFindings);
           const findings = findingsArray[0];
 
+          const riskClass =
+            riskLevel === 'high' ? 'patient-card-danger' : riskLevel === 'medium' ? 'patient-card-warn' : 'patient-card-ok';
+
           return (
             <div
               key={patient.id}
               onClick={() => onSelectPatient(patient)}
               style={{ ['--risk-color' as string]: riskAccent[riskLevel] } as CSSProperties}
-              className={`p-3 mb-2 cursor-pointer patient-card ${
+              className={`p-3 mb-2 cursor-pointer patient-card ${riskClass} ${
                 selectedPatientId === patient.id ? 'patient-card-active' : ''
               }`}
             >

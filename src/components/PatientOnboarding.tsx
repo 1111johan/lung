@@ -198,7 +198,7 @@ export function PatientOnboarding() {
   };
 
   return (
-    <div className="flex-1 grid grid-cols-2 gap-4 p-4 overflow-y-auto bg-gray-900">
+    <div className="flex-1 grid grid-cols-2 gap-4 p-4 overflow-y-auto bg-gray-900 fade-in">
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
@@ -208,7 +208,7 @@ export function PatientOnboarding() {
           <span className="text-[11px] text-gray-500">必填信息 + AI 智能匹配</span>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
+        <div className="aurora-card glass-card-hover p-3 space-y-2">
           <div className="text-xs text-gray-400 mb-1">基础信息</div>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <input className={uiStyles.input.default} value={basic.name} onChange={(e) => setBasic({ ...basic, name: e.target.value })} placeholder="姓名（可脱敏）" />
@@ -227,7 +227,7 @@ export function PatientOnboarding() {
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
+        <div className="aurora-card glass-card-hover p-3 space-y-2">
           <div className="text-xs text-gray-400">常见症状（多选）</div>
           <div className="flex flex-wrap gap-2">
             {symptomOptions.map((item) => (
@@ -244,7 +244,7 @@ export function PatientOnboarding() {
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
+        <div className="aurora-card glass-card-hover p-3 space-y-2">
           <div className="text-xs text-gray-400">流行病学 / 高危因素（多选）</div>
           <div className="flex flex-wrap gap-2">
             {riskOptions.map((item) => (
@@ -261,7 +261,7 @@ export function PatientOnboarding() {
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
+        <div className="aurora-card glass-card-hover p-3 space-y-2">
           <div className="text-xs text-gray-400">检查指标</div>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <select className={uiStyles.input.default} value={labs.ppd} onChange={(e) => setLabs({ ...labs, ppd: e.target.value })}>
@@ -279,7 +279,7 @@ export function PatientOnboarding() {
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-3">
+        <div className="aurora-card glass-card-hover p-3 space-y-3">
           <div className="flex items-center justify-between text-sm text-gray-200">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-blue-400" />
@@ -316,7 +316,7 @@ export function PatientOnboarding() {
       </div>
 
       <div className="space-y-3">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 min-h-[200px]">
+        <div className="aurora-card glass-card-hover p-3 min-h-[200px]">
           <div className="flex items-center gap-2 text-gray-200 text-sm mb-2">
             <Shield className="h-4 w-4 text-teal-400" />
             个人档案预览
@@ -340,7 +340,7 @@ export function PatientOnboarding() {
           )}
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 min-h-[200px]">
+        <div className="aurora-card glass-card-hover p-3 min-h-[200px]">
           <div className="flex items-center gap-2 text-gray-200 text-sm mb-2">
             <Database className="h-4 w-4 text-blue-400" />
             数据库入库展示
@@ -364,7 +364,7 @@ export function PatientOnboarding() {
           )}
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 min-h-[200px] space-y-3">
+        <div className="aurora-card glass-card-hover p-3 min-h-[200px] space-y-3">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <Shield className="h-4 w-4 text-teal-400" />
             数字人预览

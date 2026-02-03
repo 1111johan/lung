@@ -150,6 +150,51 @@
     -webkit-backdrop-filter: blur(16px);
   }
 
+  .nav-bar {
+    background: rgb(var(--panel, var(--bg)));
+    border-bottom: 1px solid rgb(var(--border));
+  }
+
+  :root:not([data-theme="dark"]) .nav-bar {
+    background: linear-gradient(90deg, rgb(var(--blue-200)), rgb(var(--blue-100)));
+  }
+
+  :root:not([data-theme="dark"]) .workstation-scope {
+    --app: var(--blue-50);
+    --panel: var(--blue-100);
+    --panel-strong: var(--blue-200);
+    --card: 255 255 255 / 0.72;
+    --border: 2 19 34 / 0.10;
+    --accent: var(--blue-900);
+    --accent2: var(--blue-700);
+    --danger: 255 59 48;
+    --warn: 255 149 0;
+    --ok: 52 199 89;
+    --radius-lg: 20px;
+    --radius-md: 16px;
+  }
+
+  .workstation-scope {
+    background: rgb(var(--app, var(--bg)));
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .workstation-panel {
+    background: rgb(var(--panel, var(--card))) !important;
+    border: 1px solid rgba(var(--border)) !important;
+    border-radius: var(--radius-lg);
+    box-shadow: inset 0 0 0 1px rgb(var(--border)), 0 10px 24px rgba(2, 6, 23, 0.05);
+  }
+
+  :root:not([data-theme="dark"]) .workstation-panel {
+    background: rgb(var(--panel, var(--card)));
+  }
+
+  :root:not([data-theme="dark"]) .workstation-panel-strong {
+    background: rgb(var(--panel-strong, var(--panel, var(--card)))) !important;
+  }
+
   .viewer-bg {
     background:
       radial-gradient(900px 600px at 50% 30%, rgba(255, 255, 255, 0.06), transparent 60%),
@@ -159,9 +204,14 @@
 
   .viewer-canvas {
     background: #0b1220;
-    border-radius: 16px;
+    border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     position: relative;
+    overflow: hidden;
+  }
+
+  .viewer-frame {
+    border-radius: 20px;
     overflow: hidden;
   }
 
@@ -199,7 +249,7 @@
   }
 
   .patient-queue {
-    background: rgb(var(--card));
+    background: rgb(var(--panel, var(--card)));
   }
 
   .patient-card {
@@ -209,6 +259,10 @@
     border-radius: 16px;
     transition: transform var(--transition-base) ease, box-shadow var(--transition-base) ease, border-color var(--transition-base) ease;
     box-shadow: var(--shadow-sm);
+  }
+
+  :root:not([data-theme="dark"]) .patient-card {
+    background: rgba(var(--card));
   }
 
   .patient-card::before {
@@ -227,6 +281,21 @@
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
     border-color: rgb(var(--border));
+  }
+
+  .patient-card-danger {
+    background: rgba(var(--danger), 0.03);
+    border-color: rgba(var(--border));
+  }
+
+  .patient-card-warn {
+    background: rgba(var(--warn), 0.03);
+    border-color: rgba(var(--border));
+  }
+
+  .patient-card-ok {
+    background: rgba(var(--ok), 0.02);
+    border-color: rgba(var(--border));
   }
 
   .patient-card-active {
@@ -283,13 +352,22 @@
     padding: 12px;
   }
 
+  :root:not([data-theme="dark"]) .analysis-section {
+    background: rgba(255, 255, 255, 0.86);
+    border-color: rgba(2, 19, 34, 0.08);
+    box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  }
+
+  :root:not([data-theme="dark"]) .analysis-summary {
+    background: rgba(255, 255, 255, 0.86);
+    border-color: rgba(2, 19, 34, 0.08);
+    box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  }
+
   .analysis-summary {
-    background: linear-gradient(
-      180deg,
-      rgba(var(--accent), 0.10),
-      rgba(var(--accent), 0.04)
-    );
-    border-color: rgba(var(--accent), 0.22);
+    background: rgb(var(--card));
+    border-color: rgba(2, 19, 34, 0.08);
+    box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06), inset 0 2px 0 rgba(var(--accent), 0.25);
   }
 
   .analysis-item {
@@ -407,6 +485,18 @@
     color: rgb(var(--fg));
     border: 1px solid rgb(var(--border));
     box-shadow: 0 6px 18px rgb(var(--bg) / 0.35);
+  }
+
+  .btn-secondary-alt {
+    background: rgb(var(--accent-soft));
+    color: rgb(var(--accent));
+    border: 1px solid rgb(var(--accent) / 0.25);
+    box-shadow: 0 8px 18px rgb(var(--accent) / 0.12);
+  }
+
+  .btn-secondary-alt:hover:not(:disabled) {
+    background: rgb(var(--accent-soft-strong));
+    border-color: rgb(var(--accent) / 0.35);
   }
 
   .btn-secondary:hover:not(:disabled),
@@ -599,6 +689,18 @@
     color: rgb(var(--muted)) !important;
   }
   .bg-gray-700 {
+    background-color: rgb(var(--card)) !important;
+  }
+
+  /* Workstation scoped layer mapping (light mode) */
+  :root:not([data-theme="dark"]) .workstation-scope .bg-gray-900 {
+    background-color: rgb(var(--app)) !important;
+  }
+  :root:not([data-theme="dark"]) .workstation-scope .bg-gray-850 {
+    background-color: rgb(var(--panel)) !important;
+  }
+  :root:not([data-theme="dark"]) .workstation-scope .bg-gray-800,
+  :root:not([data-theme="dark"]) .workstation-scope .bg-gray-700 {
     background-color: rgb(var(--card)) !important;
   }
   .bg-gray-600 {

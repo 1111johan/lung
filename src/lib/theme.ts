@@ -116,7 +116,7 @@ export const uiStyles = {
   // 按钮样式
   button: {
     primary: 'bg-teal-700 hover:bg-teal-600 text-white py-2.5 rounded text-sm font-medium shadow-lg shadow-teal-900/50 transition-all hover:shadow-teal-900/70',
-    secondary: 'bg-gray-700 hover:bg-gray-600 text-white py-2.5 rounded text-sm transition-colors',
+    secondary: 'btn-secondary-alt py-2.5 rounded text-sm transition-colors',
     outline: 'text-teal-400 border border-teal-400/30 px-2 py-1 rounded hover:bg-teal-400/10 transition-colors',
   },
   // 输入框样式

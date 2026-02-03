@@ -96,7 +96,7 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
   };
 
   return (
-    <aside className={uiStyles.sidebar.right}>
+    <aside className={`${uiStyles.sidebar.right} workstation-panel workstation-panel-strong`}>
       <div className="flex-1 overflow-y-auto p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-teal-500 text-sm font-bold uppercase tracking-wider flex items-center gap-2">
@@ -108,7 +108,7 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
           </span>
         </div>
 
-        <div className="mb-4 text-sm analysis-section analysis-summary">
+        <div className="mb-4 text-sm analysis-section analysis-summary glass-card-hover">
           <div className="flex items-start gap-2 mb-2">
             <div className="w-1 h-full bg-blue-500 rounded" />
             <div className="flex-1">
@@ -169,7 +169,7 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
           </div>
         </div>
 
-        <div className="mb-4 analysis-section">
+        <div className="mb-4 analysis-section glass-card-hover">
           <h4 className="text-xs text-gray-400 mb-2 flex items-center gap-1">
             <ClipboardCheck className="h-3 w-3" />
             AI 影像要点（位置/类型）
@@ -191,7 +191,7 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
           </div>
         </div>
 
-        <div className="mb-4 analysis-section">
+        <div className="mb-4 analysis-section glass-card-hover">
           <h4 className="text-xs text-gray-400 mb-2 flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
             鉴别 & 下一步
@@ -214,7 +214,7 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
         </div>
 
         {reasoningSteps.length > 0 && (
-          <div className="mb-4 analysis-section">
+          <div className="mb-4 analysis-section glass-card-hover">
             <h4 className="text-xs text-gray-400 mb-2 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3" />
               推理链（可追溯）
