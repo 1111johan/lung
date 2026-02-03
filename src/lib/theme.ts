@@ -10,8 +10,8 @@ export const riskLevels = {
     color: {
       border: 'border-red-500',
       bg: 'bg-red-900/10',
-      badge: 'bg-red-900',
-      badgeText: 'text-red-300',
+      badge: 'risk-badge risk-badge-high',
+      badgeText: '',
       progress: 'bg-red-500',
       progressText: 'text-red-400',
     },
@@ -21,8 +21,8 @@ export const riskLevels = {
     color: {
       border: 'border-yellow-500',
       bg: 'bg-yellow-900/10',
-      badge: 'bg-yellow-900',
-      badgeText: 'text-yellow-300',
+      badge: 'risk-badge risk-badge-medium',
+      badgeText: '',
       progress: 'bg-yellow-500',
       progressText: 'text-yellow-400',
     },
@@ -32,8 +32,8 @@ export const riskLevels = {
     color: {
       border: 'border-green-500',
       bg: 'bg-green-900/10',
-      badge: 'bg-green-900',
-      badgeText: 'text-green-300',
+      badge: 'risk-badge risk-badge-low',
+      badgeText: '',
       progress: 'bg-green-500',
       progressText: 'text-green-400',
     },
@@ -132,8 +132,8 @@ export const uiStyles = {
   },
   // 侧边栏样式
   sidebar: {
-    default: 'border-r border-gray-700 bg-gray-850 flex flex-col',
-    right: 'border-l border-gray-700 bg-gray-850 flex flex-col',
+    default: 'border-r border-gray-700 bg-gray-850 flex flex-col w-80 shrink-0',
+    right: 'border-l border-gray-700 bg-gray-850 flex flex-col w-96 shrink-0',
   },
   // 头部样式
   header: {
@@ -183,4 +183,33 @@ export function getActiveTbColor(likelihood: string | null): string {
 // 工具函数：获取影像状态样式
 export function getImageStatusStyle(status: keyof typeof imageStatus) {
   return imageStatus[status];
+}
+
+// 主题切换与初始化
+export type ThemeMode = 'light' | 'dark' | 'system';
+
+function setThemeAttr(mode: 'light' | 'dark') {
+  const root = document.documentElement;
+  if (mode === 'dark') {
+    root.setAttribute('data-theme', 'dark');
+  } else {
+    root.removeAttribute('data-theme');
+  }
+}
+
+export function applyTheme(mode: ThemeMode) {
+  if (mode === 'system') {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setThemeAttr(prefersDark ? 'dark' : 'light');
+  } else {
+    setThemeAttr(mode);
+  }
+}
+
+export function initTheme() {
+  applyTheme('system');
+  const media = window.matchMedia('(prefers-color-scheme: dark)');
+  const handler = () => applyTheme('system');
+  media.addEventListener('change', handler);
+  window.addEventListener('beforeunload', () => media.removeEventListener('change', handler));
 }

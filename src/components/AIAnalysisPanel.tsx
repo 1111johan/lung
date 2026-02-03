@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
-import { Brain, CheckCircle2, AlertCircle, FileText, Send, ClipboardCheck, Activity, Shield } from 'lucide-react';
+﻿import { useMemo, useState } from 'react';
+import { Brain, CheckCircle2, AlertCircle, FileText, Send, ClipboardCheck, Shield } from 'lucide-react';
 import type { AIAnalysis, Patient } from '../lib/database.types';
 import { getRiskStyles, getActiveTbColor, uiStyles, riskLevels, tbProbabilityThresholds } from '../lib/theme';
 import { AI_MODEL } from '../lib/constants';
 import { useDataContext } from '../lib/dataContext';
 import { generateReportDraft } from '../lib/deepseek';
+import { filterFindings, filterReasoningSteps } from '../lib/analysisUtils';
 import type { AnalysisFinding, DifferentialDiagnosis, ReasoningStep } from '../lib/analysisTypes';
 
 interface AIAnalysisPanelProps {
@@ -24,12 +25,14 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
   const tbProbability = analysis?.tb_probability ?? 0;
   const { saveReportDraft, rejectForRetake, confirmPositive } = useDataContext();
 
-  const evidenceFindings: AnalysisFinding[] = Array.isArray(analysis?.findings)
+  const rawFindings: AnalysisFinding[] = Array.isArray(analysis?.findings)
     ? (analysis?.findings as AnalysisFinding[])
     : [];
-  const reasoningSteps: ReasoningStep[] = Array.isArray(analysis?.reasoning_chain)
+  const evidenceFindings = filterFindings(rawFindings);
+  const rawReasoning: ReasoningStep[] = Array.isArray(analysis?.reasoning_chain)
     ? (analysis?.reasoning_chain as ReasoningStep[])
     : [];
+  const reasoningSteps = filterReasoningSteps(rawReasoning);
 
   const differentialList: DifferentialView[] = useMemo(
     () =>
@@ -105,7 +108,7 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
           </span>
         </div>
 
-        <div className="mb-4 text-sm bg-blue-900/20 border border-blue-800/50 p-3 rounded-lg">
+        <div className="mb-4 text-sm analysis-section analysis-summary">
           <div className="flex items-start gap-2 mb-2">
             <div className="w-1 h-full bg-blue-500 rounded" />
             <div className="flex-1">
@@ -166,21 +169,17 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
           </div>
         </div>
 
-        <div className="mb-4">
+        <div className="mb-4 analysis-section">
           <h4 className="text-xs text-gray-400 mb-2 flex items-center gap-1">
             <ClipboardCheck className="h-3 w-3" />
-            AI 影像要点（位置/类型/置信）
+            AI 影像要点（位置/类型）
           </h4>
           <div className="grid grid-cols-2 gap-2">
             {evidenceFindings.slice(0, 4).map((f, idx) => (
-              <div key={`${f.location}-${idx}`} className="bg-gray-800 border border-gray-700 rounded p-2 text-xs space-y-1">
+              <div key={`${f.location}-${idx}`} className="analysis-item p-2 text-xs space-y-1">
                 <div className="flex justify-between text-gray-200">
                   <span>{f.location || '肺野'}</span>
                   <span className="text-blue-300">{f.type || '异常'}</span>
-                </div>
-                <div className="text-gray-400 flex items-center gap-1">
-                  <Activity className="h-3 w-3" />
-                  <span>置信度 {f.confidence ? `${(f.confidence * 100).toFixed(0)}%` : '—'}</span>
                 </div>
                 <div className="text-gray-400">范围: {f.diameter_mm || f.size ? `${f.diameter_mm || f.size}mm` : '—'}</div>
                 <div className="text-gray-500">切片: {f.slice_range || '—'}</div>
@@ -192,14 +191,14 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
           </div>
         </div>
 
-        <div className="mb-4">
+        <div className="mb-4 analysis-section">
           <h4 className="text-xs text-gray-400 mb-2 flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
             鉴别 & 下一步
           </h4>
           <div className="space-y-2">
             {differentialList.map((diag, idx) => (
-              <div key={`${diag.dx}-${idx}`} className="border border-gray-700 rounded p-2 bg-gray-800/60">
+              <div key={`${diag.dx}-${idx}`} className="analysis-item p-2">
                 <div className="flex justify-between text-xs text-gray-200 mb-1">
                   <span>{diag.dx}</span>
                   <span className="text-blue-300 font-mono">{Math.round(diag.score * 100)}%</span>
@@ -207,7 +206,7 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
                 <div className="text-[11px] text-gray-300">下一步：{diag.next.join('、') || '—'}</div>
               </div>
             ))}
-            <div className="text-[11px] text-amber-200 flex items-center gap-1">
+            <div className="analysis-callout text-[11px] flex items-center gap-1">
               <Shield className="h-3 w-3" />
               高危病例需医生确认，提交后自动生成转诊/随访。
             </div>
@@ -215,7 +214,7 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
         </div>
 
         {reasoningSteps.length > 0 && (
-          <div className="mb-4">
+          <div className="mb-4 analysis-section">
             <h4 className="text-xs text-gray-400 mb-2 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3" />
               推理链（可追溯）
@@ -234,8 +233,8 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
         )}
 
         {patient.tb_history && (
-          <div className="mb-4 bg-orange-900/20 border border-orange-800/50 p-3 rounded text-xs">
-            <div className="flex items-center gap-2 text-orange-300 mb-1">
+          <div className="mb-4 analysis-warning text-xs">
+            <div className="flex items-center gap-2 text-[rgb(var(--warning))] mb-1">
               <AlertCircle className="h-4 w-4" />
               <span className="font-semibold">既往结核提示</span>
             </div>
@@ -259,7 +258,7 @@ export function AIAnalysisPanel({ analysis, patient }: AIAnalysisPanelProps) {
               className={`text-xs ${uiStyles.button.primary} ml-2`}
               disabled={aiDraftLoading}
             >
-              {aiDraftLoading ? '生成中...' : '用 DeepSeek 生成'}
+              {aiDraftLoading ? '生成中...' : '智慧生成'}
             </button>
           </div>
         </div>

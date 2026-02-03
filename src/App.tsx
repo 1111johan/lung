@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState, useEffect } from 'react';
 import type { JSX } from 'react';
 import {
   Activity,
@@ -24,9 +24,9 @@ import { PatientQA } from './components/PatientQA';
 import type { PageId } from './lib/pageTypes';
 
 const navItems: { id: PageId; label: string; icon: JSX.Element }[] = [
-  { id: 'enroll', label: '患者建档', icon: <ClipboardList className="h-4 w-4" /> },
-  { id: 'qa', label: '患者问答', icon: <ClipboardList className="h-4 w-4 rotate-90" /> },
-  { id: 'dashboard', label: '首页仪表盘', icon: <Home className="h-4 w-4" /> },
+  { id: 'enroll', label: '个人健康档案', icon: <ClipboardList className="h-4 w-4" /> },
+  { id: 'qa', label: '智能问答', icon: <ClipboardList className="h-4 w-4 rotate-90" /> },
+  { id: 'dashboard', label: '结核病风险自测', icon: <Home className="h-4 w-4" /> },
   { id: 'workstation', label: '筛查工作台', icon: <Layers className="h-4 w-4" /> },
   { id: 'reports', label: '报告中心', icon: <FileText className="h-4 w-4" /> },
   { id: 'referrals', label: '转诊与上报', icon: <ClipboardList className="h-4 w-4" /> },
@@ -189,13 +189,13 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
     return `剩余 ${diff} 天`;
   };
   return (
-    <div className="p-4 space-y-4 h-full overflow-y-auto bg-gray-900">
+    <div className="p-4 space-y-4 h-full overflow-y-auto bg-[rgb(var(--bg))]">
       <div className="grid grid-cols-4 gap-3">
         {kpiCards.map((card) => (
           <button
             key={card.label}
             onClick={card.onClick}
-            className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-left hover:border-teal-600 transition-colors"
+            className="aurora-card glass-card-hover p-3 text-left hover:border-teal-600 transition-colors"
           >
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span className="flex items-center gap-2">{card.label}</span>
@@ -214,7 +214,7 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
+        <div className="aurora-card glass-card-hover p-3 space-y-2">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <BarChart3 className="h-4 w-4 text-blue-400" />
             高危患者 Top5
@@ -226,7 +226,7 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
               return (
                 <div
                   key={p.id}
-                  className="flex flex-col gap-1 text-xs bg-gray-900 rounded px-2 py-2 border border-gray-700 hover:border-teal-600 transition-colors"
+                  className="flex flex-col gap-1 text-xs bg-[rgb(var(--bg))] rounded px-2 py-2 border border-[rgb(var(--border))] hover:border-teal-600 transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <div className="text-gray-200 font-semibold">
@@ -239,7 +239,7 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {tags.map((t) => (
-                      <span key={t} className="px-1.5 py-0.5 bg-gray-800 rounded text-[11px] text-gray-200">
+                      <span key={t} className="px-1.5 py-0.5 bg-[rgb(var(--card))] rounded text-[11px] text-gray-200">
                         {t}
                       </span>
                     ))}
@@ -261,14 +261,14 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
+        <div className="aurora-card glass-card-hover p-3 space-y-2">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <Clock4 className="h-4 w-4 text-amber-400" />
             随访提醒
           </div>
           <div className="space-y-2">
             {sortedFollowups.map((f) => (
-              <div key={f.id} className="flex items-center justify-between text-xs bg-gray-900 rounded px-2 py-1 border border-gray-700">
+              <div key={f.id} className="flex items-center justify-between text-xs bg-[rgb(var(--bg))] rounded px-2 py-1 border border-[rgb(var(--border))]">
                 <div className="text-gray-200">{f.title}</div>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-400">{daysDelta(f.dueAt)}</span>
@@ -296,14 +296,14 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
+        <div className="aurora-card glass-card-hover p-3 space-y-2">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <Activity className="h-4 w-4 text-emerald-400" />
             最新报告
           </div>
           <div className="space-y-2">
             {latestReports.map((r) => (
-              <div key={r.id} className="flex items-center justify-between text-xs bg-gray-900 rounded px-2 py-1 border border-gray-700">
+              <div key={r.id} className="flex items-center justify-between text-xs bg-[rgb(var(--bg))] rounded px-2 py-1 border border-[rgb(var(--border))]">
                 <div className="text-gray-200 flex items-center gap-2">
                   <span className="font-mono text-blue-300">{r.id}</span>
                   <span className="text-gray-400">{formatDate(r.updatedAt)}</span>
@@ -317,7 +317,7 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
                       ? 'bg-emerald-900 text-emerald-200'
                       : r.status === 'retake'
                       ? 'bg-red-900 text-red-200'
-                      : 'bg-gray-800 text-gray-300'
+                      : 'bg-[rgb(var(--card))] text-gray-300'
                   }`}
                 >
                   {r.status === 'pending_sign' ? '待签署' : r.status === 'signed' ? '已签署' : r.status === 'retake' ? '重拍' : '草稿'}
@@ -330,7 +330,7 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="col-span-2 bg-gray-800 border border-gray-700 rounded-lg p-3">
+        <div className="col-span-2 aurora-card glass-card-hover p-3">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2 text-gray-200 text-sm">
               <Activity className="h-4 w-4 text-teal-400" />
@@ -341,7 +341,7 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
           <div className="flex items-end gap-2 h-40">
             {trend.map((p) => (
               <div key={p.label} className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full bg-gray-900 border border-gray-700 rounded p-1 flex flex-col gap-1">
+                <div className="w-full bg-[rgb(var(--bg))] border border-[rgb(var(--border))] rounded p-1 flex flex-col gap-1">
                   <div className="h-2.5 bg-amber-500 rounded" style={{ width: `${Math.min(p.suspect * 5, 100)}%` }}></div>
                   <div className="h-2.5 bg-red-500 rounded" style={{ width: `${Math.min(p.positive * 8, 100)}%` }}></div>
                   <div className="h-2.5 bg-emerald-500 rounded" style={{ width: `${Math.min(p.cleared * 5, 100)}%` }}></div>
@@ -357,14 +357,14 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-3">
+        <div className="aurora-card glass-card-hover p-3 space-y-3">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <ClipboardList className="h-4 w-4 text-blue-400" />
             今日待办
           </div>
           <div className="space-y-2">
             {tasks.map((t) => (
-              <div key={t.title} className="flex items-center justify-between text-xs bg-gray-900 rounded px-2 py-2 border border-gray-700 hover:border-teal-600 transition-colors">
+              <div key={t.title} className="flex items-center justify-between text-xs bg-[rgb(var(--bg))] rounded px-2 py-2 border border-[rgb(var(--border))] hover:border-teal-600 transition-colors">
                 <div className="text-gray-200">{t.title}</div>
                 <div className="flex items-center gap-2">
                   <button
@@ -423,7 +423,7 @@ function ReportsPage() {
     return '草稿';
   };
   return (
-    <div className="p-4 h-full overflow-y-auto bg-gray-900">
+    <div className="p-4 h-full overflow-y-auto bg-[rgb(var(--bg))]">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-gray-200 text-sm">
           <FileText className="h-4 w-4 text-blue-400" />
@@ -432,11 +432,11 @@ function ReportsPage() {
         <span className="text-[11px] text-gray-500">QA：必填校验 / 所见-印象一致性提示</span>
       </div>
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg divide-y divide-gray-700">
+      <div className="aurora-card glass-card-hover divide-y divide-gray-700">
         {reports.map((row) => (
           <div key={row.id} className="p-3 flex items-center justify-between text-sm">
             <div className="flex items-center gap-3">
-              <span className="px-2 py-1 rounded bg-gray-900 text-gray-200 font-mono text-xs">{row.id}</span>
+              <span className="px-2 py-1 rounded bg-[rgb(var(--bg))] text-gray-200 font-mono text-xs">{row.id}</span>
               <div>
                 <div className="text-gray-100">{getPatientName(row.patientId)}</div>
                 <div className="text-gray-500 text-xs">{row.updatedAt}</div>
@@ -462,7 +462,7 @@ function ReferralsPage() {
   const { referrals, patients, updateReferralStatus } = useDataContext();
   const getPatientName = (id: string) => patients.find((p) => p.id === id)?.name || id;
   return (
-    <div className="p-4 h-full overflow-y-auto bg-gray-900">
+    <div className="p-4 h-full overflow-y-auto bg-[rgb(var(--bg))]">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-gray-200 text-sm">
           <ClipboardList className="h-4 w-4 text-emerald-400" />
@@ -470,11 +470,11 @@ function ReferralsPage() {
         </div>
         <span className="text-[11px] text-gray-500">必填字段校验，生成通知书/转诊单</span>
       </div>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg divide-y divide-gray-700">
+      <div className="aurora-card glass-card-hover divide-y divide-gray-700">
         {referrals.map((row) => (
           <div key={row.id} className="p-3 flex items-center justify-between text-sm">
             <div className="flex items-center gap-3">
-              <span className="px-2 py-1 rounded bg-gray-900 text-gray-200 font-mono text-xs">{row.id}</span>
+              <span className="px-2 py-1 rounded bg-[rgb(var(--bg))] text-gray-200 font-mono text-xs">{row.id}</span>
               <div className="text-gray-100">{getPatientName(row.patientId)}</div>
             </div>
             <div className="flex items-center gap-3 text-xs">
@@ -507,7 +507,7 @@ function FollowupPage() {
   const { followups, patients, updateFollowupStatus } = useDataContext();
   const getPatientName = (id: string) => patients.find((p) => p.id === id)?.name || id;
   return (
-    <div className="p-4 h-full overflow-y-auto bg-gray-900">
+    <div className="p-4 h-full overflow-y-auto bg-[rgb(var(--bg))]">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-gray-200 text-sm">
           <Clock4 className="h-4 w-4 text-amber-400" />
@@ -515,11 +515,11 @@ function FollowupPage() {
         </div>
         <span className="text-[11px] text-gray-500">节点：2周 / 1月 / 3月；逾期自动提醒</span>
       </div>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg divide-y divide-gray-700">
+      <div className="aurora-card glass-card-hover divide-y divide-gray-700">
         {followups.map((row) => (
           <div key={row.id} className="p-3 flex items-center justify-between text-sm">
             <div className="flex items-center gap-3">
-              <span className="px-2 py-1 rounded bg-gray-900 text-gray-200 font-mono text-xs">{row.id}</span>
+              <span className="px-2 py-1 rounded bg-[rgb(var(--bg))] text-gray-200 font-mono text-xs">{row.id}</span>
               <div className="text-gray-100">{row.title}</div>
               <div className="text-gray-500 text-xs">{getPatientName(row.patientId)}</div>
             </div>
@@ -548,15 +548,15 @@ function FollowupPage() {
 
 function ResearchPage() {
   return (
-    <div className="p-4 h-full overflow-y-auto bg-gray-900 space-y-3">
+    <div className="p-4 h-full overflow-y-auto bg-[rgb(var(--bg))] space-y-3">
       <div className="flex items-center gap-2 text-gray-200 text-sm">
         <Stethoscope className="h-4 w-4 text-teal-400" />
         科研与教学（脱敏导出/病例库）
       </div>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm space-y-3">
+      <div className="aurora-card glass-card-hover p-3 text-sm space-y-3">
         <div className="text-gray-300">队列构建：地区 / 征象 / 检验 / 随访齐全</div>
         <div className="flex gap-2">
-          <input className={uiStyles.input.default + ' flex-1'} placeholder="示例：百色 + 高危 + 空洞" />
+          <input className={uiStyles.input.default + ' flex-1'} placeholder="示例：百色 + 高危 + 结节" />
           <button className={uiStyles.button.primary}>生成队列</button>
         </div>
         <div className="flex gap-2">
@@ -564,14 +564,14 @@ function ResearchPage() {
           <button className={uiStyles.button.secondary}>导出 ROI/Mask</button>
         </div>
       </div>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm">
+      <div className="aurora-card glass-card-hover p-3 text-sm">
         <div className="text-gray-200 mb-2 flex items-center gap-2">
           <Users className="h-4 w-4 text-blue-300" />
           典型病例库（示例）
         </div>
         <div className="grid grid-cols-3 gap-2">
-          {['空洞', '树芽征', '钙化'].map((tag) => (
-            <div key={tag} className="bg-gray-900 border border-gray-700 rounded p-2 text-gray-300 text-xs">
+          {['结节', '树芽征', '钙化'].map((tag) => (
+            <div key={tag} className="bg-[rgb(var(--bg))] border border-[rgb(var(--border))] rounded p-2 text-gray-300 text-xs">
               {tag} • 3 例占位
             </div>
           ))}
@@ -584,12 +584,12 @@ function ResearchPage() {
 function AuditPage() {
   const { auditLogs } = useDataContext();
   return (
-    <div className="p-4 h-full overflow-y-auto bg-gray-900 space-y-3">
+    <div className="p-4 h-full overflow-y-auto bg-[rgb(var(--bg))] space-y-3">
       <div className="flex items-center gap-2 text-gray-200 text-sm">
         <Shield className="h-4 w-4 text-emerald-400" />
         系统与审计
       </div>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg divide-y divide-gray-700">
+      <div className="aurora-card glass-card-hover divide-y divide-gray-700">
         {auditLogs.map((row) => (
           <div key={row.id} className="p-3 text-sm flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -604,7 +604,7 @@ function AuditPage() {
           </div>
         ))}
       </div>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-xs text-gray-300">
+      <div className="aurora-card glass-card-hover p-3 text-xs text-gray-300">
         当前模型：GX-TB-v4.2 • 阈值 0.75 • 角色：影像科/呼吸感染科/公卫护士（MVP）
       </div>
     </div>
@@ -617,13 +617,21 @@ function WorkstationPage({
   selectedImage,
   selectedAnalysis,
 }: {
-  onSelectPatient: (p: PatientWithAnalysis) => void;
+  onSelectPatient: (p: PatientWithAnalysis | null) => void;
   selectedPatient: PatientWithAnalysis | null;
   selectedImage: MedicalImage | null;
   selectedAnalysis: AIAnalysis | null;
 }) {
+  const { patients } = useDataContext();
+
+  useEffect(() => {
+    if (!selectedPatient && patients.length > 0) {
+      onSelectPatient(patients[0]);
+    }
+  }, [patients, onSelectPatient, selectedPatient]);
+
   return (
-    <main className="flex-1 flex overflow-hidden bg-gray-900">
+    <main className="flex-1 flex overflow-hidden bg-[rgb(var(--bg))]">
       <PatientQueue
         onSelectPatient={onSelectPatient}
         selectedPatientId={selectedPatient?.id || null}
@@ -640,7 +648,13 @@ function App() {
   const [selectedImage, setSelectedImage] = useState<MedicalImage | null>(null);
   const [selectedAnalysis, setSelectedAnalysis] = useState<AIAnalysis | null>(null);
 
-  const handleSelectPatient = (patient: PatientWithAnalysis) => {
+  const handleSelectPatient = (patient: PatientWithAnalysis | null) => {
+    if (!patient) {
+      setSelectedPatient(null);
+      setSelectedImage(null);
+      setSelectedAnalysis(null);
+      return;
+    }
     setSelectedPatient(patient);
     const firstImage = patient.medical_images?.[0];
     if (firstImage) {
@@ -686,10 +700,10 @@ function App() {
 
   return (
     <DataProvider>
-      <div className="flex flex-col h-screen bg-gray-900 text-gray-100">
+      <div className="flex flex-col h-screen bg-[rgb(var(--bg))] text-gray-100">
         <Header />
 
-        <div className="bg-gray-900 border-b border-gray-800 px-4">
+        <div className="bg-[rgb(var(--bg))] border-b border-[rgb(var(--border))] px-4">
           <div className="flex gap-2 overflow-x-auto py-2">
             {navItems.map((item) => (
               <button
@@ -697,8 +711,8 @@ function App() {
                 onClick={() => setActivePage(item.id)}
                 className={`flex items-center gap-2 px-3 py-2 rounded text-sm border ${
                   activePage === item.id
-                    ? 'bg-gray-800 border-teal-600 text-teal-200'
-                    : 'bg-gray-900 border-gray-800 text-gray-400 hover:text-gray-200'
+                    ? 'bg-[rgb(var(--card))] border-teal-600 text-teal-200'
+                    : 'bg-[rgb(var(--bg))] border-[rgb(var(--border))] text-gray-400 hover:text-gray-200'
                 }`}
               >
                 {item.icon}
@@ -715,3 +729,6 @@ function App() {
 }
 
 export default App;
+
+
+

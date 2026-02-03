@@ -61,7 +61,7 @@
     {"id": "task-001", "type": "lab", "title": "补做痰涂片", "due_offset_days": 0, "payload": {"form": "sputum_smear"}, "rationale": ["differential:TB"], "required_fields": ["collection_time"], "status": "draft"}
   ],
   "report_snippets": {
-    "findings": ["右上肺见空洞样低密度影，最大径约12mm。"],
+    "findings": ["右上肺见结节样低密度影，最大径约12mm。"],
     "impression": ["结核性病灶倾向，建议结合痰检。"],
     "recommendation": ["请完成痰涂片与培养。"],
     "trace_links": {"finding-001": ["findings[0]", "impression[0]"]}
@@ -84,7 +84,7 @@
 - 审计提示：高危需二次确认；被修改的句子/任务显示修改人和时间。
 
 ## 6. 规则与校验
-- 阈值策略：高危默认 score >= 0.75 或含高危证据（空洞+IGRA阳性+密接）。
+- 阈值策略：高危默认 score >= 0.75 或含高危证据（结节+IGRA阳性+密接）。
 - 数据校验：必填字段缺失则不出最终 tier，提示“缺失字段”并指向表单；检验状态 pending 时给出占位与提醒。
 - 用药/禁忌：如妊娠/肝功能异常，输出路径级提示，不给具体处方。
 

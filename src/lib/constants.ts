@@ -5,10 +5,10 @@
 
 // 应用信息
 export const APP_CONFIG = {
-  name: '广西医科大 TB-Agent',
+  name: '广西医科大学',
   fullName: '广西医科大学肺结核 AI 筛查工作站',
   version: '1.0.0',
-  hospital: '广西医科大一附院',
+  hospital: '广西医科大学第一附属医院',
   department: 'PACS',
 } as const;
 

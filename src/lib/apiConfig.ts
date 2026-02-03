@@ -9,7 +9,7 @@ const DEEPSEEK_BASE_URL = (import.meta.env.VITE_DEEPSEEK_BASE_URL as string | un
 
 export function getDeepseekApiKey() {
   if (!DEEPSEEK_API_KEY) {
-    console.warn('DeepSeek API key is not configured. Set VITE_DEEPSEEK_API_KEY in your .env file.');
+    console.warn('智慧生成 API key 未配置，请在 .env 中设置 VITE_DEEPSEEK_API_KEY。');
   }
   return DEEPSEEK_API_KEY;
 }

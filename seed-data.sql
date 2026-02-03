@@ -57,8 +57,8 @@ BEGIN
   VALUES
     (
       img1_id, p1_id, 0.95, 'high', 92.0, '疑似活动期',
-      '[{"type": "空洞", "location": "右上肺野", "x": 65, "y": 25, "width": 10, "height": 12, "size": "1.2cm", "confidence": 0.92}]'::jsonb,
-      '[{"step": 1, "text": "扫描影像完成 (180ms)"}, {"step": 2, "text": "发现右上肺野薄壁空洞影像，最大直径1.2cm"}, {"step": 3, "text": "结合患者主诉「咳血2周」及既往结核史"}, {"step": 4, "text": "PPD强阳性支持结核诊断"}, {"step": 5, "text": "综合判断：继发性肺结核可能性大"}]'::jsonb,
+      '[{"type": "结节", "location": "右上肺野", "x": 65, "y": 25, "width": 10, "height": 12, "size": "1.2cm", "confidence": 0.92}]'::jsonb,
+      '[{"step": 1, "text": "扫描影像完成 (180ms)"}, {"step": 2, "text": "发现右上肺野小结节影像，最大直径1.2cm"}, {"step": 3, "text": "结合患者主诉「咳血2周」及既往结核史"}, {"step": 4, "text": "PPD强阳性支持结核诊断"}, {"step": 5, "text": "综合判断：继发性肺结核可能性大"}]'::jsonb,
       '[{"condition": "肺脓肿", "suggestion": "注意鉴别，建议痰培养"}, {"condition": "真菌感染", "suggestion": "可行GM试验排除"}]'::jsonb,
       NOW() - INTERVAL '2 hours'
     ),
@@ -85,8 +85,8 @@ BEGIN
     ),
     (
       img5_id, p5_id, 0.89, 'high', 88.0, '高度疑似活动期',
-      '[{"type": "干酪样坏死", "location": "双上肺", "x": 45, "y": 20, "width": 20, "height": 25, "confidence": 0.89}, {"type": "空洞", "location": "右上肺", "x": 65, "y": 22, "width": 8, "height": 10, "confidence": 0.85}]'::jsonb,
-      '[{"step": 1, "text": "CT增强扫描分析完成"}, {"step": 2, "text": "双上肺多发斑片影伴空洞形成"}, {"step": 3, "text": "患者持续发热1月，痰检阳性"}, {"step": 4, "text": "强烈建议抗结核治疗"}]'::jsonb,
+      '[{"type": "干酪样坏死", "location": "双上肺", "x": 45, "y": 20, "width": 20, "height": 25, "confidence": 0.89}, {"type": "结节", "location": "右上肺", "x": 65, "y": 22, "width": 8, "height": 10, "confidence": 0.85}]'::jsonb,
+      '[{"step": 1, "text": "CT增强扫描分析完成"}, {"step": 2, "text": "双上肺多发斑片影伴结节影"}, {"step": 3, "text": "患者持续发热1月，痰检阳性"}, {"step": 4, "text": "强烈建议抗结核治疗"}]'::jsonb,
       '[{"condition": "播散性肺结核", "suggestion": "立即启动治疗"}, {"condition": "耐药结核", "suggestion": "药敏试验"}]'::jsonb,
       NOW() - INTERVAL '10 hours'
     ),

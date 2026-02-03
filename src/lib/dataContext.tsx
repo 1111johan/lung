@@ -51,6 +51,7 @@ interface DataContextValue {
   loadingSupabase: boolean;
   reloadFromSupabase: () => Promise<void>;
   addPatientFromSupabase: (patient: PatientWithAnalysis) => void;
+  removePatient: (patientId: string) => void;
   saveReportDraft: (patientId: string, content: string) => void;
   rejectForRetake: (patientId: string) => void;
   confirmPositive: (patientId: string) => void;
@@ -89,7 +90,7 @@ const initialPatients: PatientWithAnalysis[] = [
         id: 'img1',
         patient_id: 'p1',
         image_type: 'CT',
-        image_url: null,
+        image_url: '/dicom-case.jpg',
         acquisition_date: '2024-12-28T09:00:00Z',
         modality: 'CT',
         series_description: 'Chest CT',
@@ -104,11 +105,9 @@ const initialPatients: PatientWithAnalysis[] = [
             risk_level: 'high',
             tb_probability: 88,
             active_tb_likelihood: '高度疑似活动期',
-            findings: [
-              { location: '右上肺', type: '空洞', size: '12mm', confidence: 0.92, slice_range: '34-52' },
-            ],
+            findings: [],
             reasoning_chain: [
-              { text: '上肺野空洞伴周围浸润' },
+              { text: '上肺野异常伴周围浸润' },
               { text: 'TB 概率 88%，建议痰检+隔离评估' },
             ],
             differential_diagnosis: [
@@ -224,8 +223,15 @@ const initialPatients: PatientWithAnalysis[] = [
   },
 ];
 
+const demoCase = initialPatients[0];
+
+const mergeDemoCase = (list: PatientWithAnalysis[]) => {
+  const filtered = list.filter((p) => p.id !== demoCase.id);
+  return [demoCase, ...filtered];
+};
+
 const initialReports: ReportEntry[] = [
-  { id: 'R-001', patientId: 'p1', status: 'draft', type: 'screening', updatedAt: nowText(), qaNote: '缺少空洞大小' },
+  { id: 'R-001', patientId: 'p1', status: 'draft', type: 'screening', updatedAt: nowText(), qaNote: '缺少病灶大小' },
   { id: 'R-002', patientId: 'p2', status: 'signed', type: 'screening', updatedAt: nowText(), qaNote: '通过' },
   { id: 'R-003', patientId: 'p3', status: 'retake', type: 'screening', updatedAt: nowText(), qaNote: '体位不佳' },
 ];
@@ -259,7 +265,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const remotePatients = await fetchPatientsWithAnalysis();
       if (remotePatients?.length) {
-        setPatients(remotePatients);
+        setPatients(mergeDemoCase(remotePatients));
       }
     } catch (err) {
       console.warn('Supabase load failed, falling back to mock data', err);
@@ -274,8 +280,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addPatientFromSupabase = useCallback((patient: PatientWithAnalysis) => {
     setPatients((prev) => {
-      const filtered = prev.filter((p) => p.id !== patient.id);
-      return [patient, ...filtered];
+      const filtered = prev.filter((p) => p.id !== patient.id && p.id !== demoCase.id);
+      return [demoCase, patient, ...filtered];
     });
   }, []);
 
@@ -285,6 +291,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       ...prev,
     ]);
   }, []);
+
+  const removePatient = useCallback(
+    (patientId: string) => {
+      setPatients((prev) => prev.filter((p) => p.id !== patientId));
+      setReports((prev) => prev.filter((r) => r.patientId !== patientId));
+      setReferrals((prev) => prev.filter((r) => r.patientId !== patientId));
+      setFollowups((prev) => prev.filter((f) => f.patientId !== patientId));
+      appendAudit({ actor: 'system', action: '删除患者', target: patientId, detail: '待筛查删除' });
+    },
+    [appendAudit]
+  );
 
   const saveReportDraft = useCallback(
     (patientId: string, content: string) => {
@@ -379,6 +396,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       loadingSupabase,
       reloadFromSupabase,
       addPatientFromSupabase,
+      removePatient,
       saveReportDraft,
       rejectForRetake,
       confirmPositive,
@@ -394,6 +412,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       loadingSupabase,
       reloadFromSupabase,
       addPatientFromSupabase,
+      removePatient,
       saveReportDraft,
       rejectForRetake,
       confirmPositive,

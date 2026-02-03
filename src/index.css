@@ -17,8 +17,8 @@
     font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
       "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
       "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-    font-size: 16px;
-    line-height: 1.5;
+    font-size: 17px;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
@@ -59,26 +59,22 @@
     background: rgb(var(--border) / 0.8);
   }
 
-  /* Subtle grid texture */
+  /* Subtle grid texture removed for light mode to避免蒙层感；仅深色保留极弱网格 */
   body::before {
     content: "";
     position: fixed;
     inset: 0;
     pointer-events: none;
-    background:
-      linear-gradient(rgb(var(--fg) / 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(var(--fg) / 0.03) 1px, transparent 1px);
-    background-size: 64px 64px;
-    opacity: 0.18;
-    mix-blend-mode: multiply;
+    opacity: 0;
   }
 
   :root[data-theme="dark"] body::before {
     background:
-      linear-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+      linear-gradient(rgb(255 255 255 / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.03) 1px, transparent 1px);
+    background-size: 64px 64px;
     mix-blend-mode: screen;
-    opacity: 0.10;
+    opacity: 0.04;
   }
 }
 
@@ -87,15 +83,235 @@
   .glass-card {
     background: rgb(var(--card));
     border: 1px solid rgb(var(--border));
-    border-radius: var(--radius-card);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: var(--shadow-md);
-    transition: all var(--transition-base) ease;
-  }
+  border-radius: var(--radius-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base) ease;
+}
+
+/* Aurora 冷光描边卡片 */
+  .aurora-card {
+  position: relative;
+  background: rgb(var(--card));
+  border: 1px solid rgba(var(--border));
+  border-radius: var(--radius-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  z-index: 0;
+  transition: transform var(--transition-base) ease, box-shadow var(--transition-base) ease, border-color var(--transition-base) ease;
+}
+.aurora-card > * {
+  position: relative;
+  z-index: 1;
+}
+.aurora-card::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(
+    from 180deg,
+    rgba(var(--accent), 0.32),
+    rgba(var(--accent2), 0.22),
+    rgba(var(--accent3), 0.18),
+    rgba(var(--accent), 0.32)
+  );
+  filter: blur(16px);
+  opacity: 0.38;
+  z-index: 0;
+}
+.aurora-card::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: rgb(var(--card));
+  pointer-events: none;
+  z-index: 0;
+}
+.aurora-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(var(--border), 0.18);
+}
 
   .glass-card-hover {
     cursor: pointer;
+  }
+
+  .topbar {
+    background: rgb(var(--card));
+    border-bottom: 1px solid rgb(var(--border));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .viewer-bg {
+    background:
+      radial-gradient(900px 600px at 50% 30%, rgba(255, 255, 255, 0.06), transparent 60%),
+      #0b1220;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+
+  .viewer-canvas {
+    background: #0b1220;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .viewer-canvas::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 35%);
+    opacity: 0.6;
+  }
+
+  .viewer-toolbar {
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: 999px;
+  }
+
+  .viewer-tool-button {
+    color: rgba(255, 255, 255, 0.72);
+    transition: color var(--transition-base) ease, background var(--transition-base) ease;
+    border-radius: 999px;
+  }
+
+  .viewer-tool-button:hover {
+    color: rgba(255, 255, 255, 0.98);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .viewer-tool-button.active {
+    color: rgb(var(--accent));
+    background: rgba(var(--accent), 0.18);
+  }
+
+  .patient-queue {
+    background: rgb(var(--card));
+  }
+
+  .patient-card {
+    position: relative;
+    background: rgb(var(--card));
+    border: 1px solid rgb(var(--border));
+    border-radius: 16px;
+    transition: transform var(--transition-base) ease, box-shadow var(--transition-base) ease, border-color var(--transition-base) ease;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .patient-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--risk-color, rgb(var(--accent)));
+    opacity: 0.9;
+  }
+
+  .patient-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    border-color: rgb(var(--border));
+  }
+
+  .patient-card-active {
+    background: rgba(var(--accent), 0.06);
+    border-color: rgba(var(--accent), 0.2);
+  }
+
+  .risk-badge {
+    border-radius: 999px;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+
+  .risk-badge-high {
+    background: rgba(255, 59, 48, 0.12);
+    color: #b42318;
+    border-color: rgba(255, 59, 48, 0.22);
+  }
+
+  .risk-badge-medium {
+    background: rgba(255, 149, 0, 0.12);
+    color: #b54708;
+    border-color: rgba(255, 149, 0, 0.22);
+  }
+
+  .risk-badge-low {
+    background: rgba(52, 199, 89, 0.12);
+    color: #027a48;
+    border-color: rgba(52, 199, 89, 0.22);
+  }
+
+  :root[data-theme="dark"] .risk-badge-high {
+    background: rgba(255, 59, 48, 0.22);
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 59, 48, 0.35);
+  }
+
+  :root[data-theme="dark"] .risk-badge-medium {
+    background: rgba(255, 149, 0, 0.22);
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 149, 0, 0.35);
+  }
+
+  :root[data-theme="dark"] .risk-badge-low {
+    background: rgba(52, 199, 89, 0.22);
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(52, 199, 89, 0.35);
+  }
+
+  .analysis-section {
+    background: rgb(var(--card));
+    border: 1px solid rgb(var(--border));
+    border-radius: 16px;
+    padding: 12px;
+  }
+
+  .analysis-summary {
+    background: linear-gradient(
+      180deg,
+      rgba(var(--accent), 0.10),
+      rgba(var(--accent), 0.04)
+    );
+    border-color: rgba(var(--accent), 0.22);
+  }
+
+  .analysis-item {
+    background: rgb(var(--card));
+    border: 1px solid rgb(var(--border));
+    border-radius: 12px;
+  }
+
+  .analysis-callout {
+    background: rgba(var(--accent), 0.08);
+    border: 1px solid rgba(var(--accent), 0.2);
+    color: rgb(var(--accent));
+    border-radius: 12px;
+    padding: 8px 10px;
+  }
+
+  .analysis-warning {
+    background: rgba(var(--warning), 0.10);
+    border: 1px solid rgba(var(--warning), 0.24);
+    color: rgb(var(--fg));
+    border-radius: 12px;
+    padding: 10px 12px;
   }
 
   .glass-card-hover:hover {
@@ -154,11 +370,7 @@
 
   .btn-primary,
   .glass-btn-primary {
-    background: linear-gradient(
-      135deg,
-      rgb(var(--accent)) 0%,
-      rgb(var(--accent-hover)) 100%
-    );
+    background: linear-gradient(135deg, rgb(var(--accent)) 0%, rgb(var(--accent-hover)) 100%);
     color: white;
     border-color: rgb(var(--accent) / 0.7);
     box-shadow: 0 12px 28px rgb(var(--accent) / 0.22);
@@ -286,5 +498,159 @@
   .text-secondary {
     color: rgb(var(--fg) / 0.72);
   }
+
+  .input-field {
+    @apply w-full px-3 py-2 rounded-md border transition-all;
+    border-color: rgb(var(--border));
+    background: rgb(var(--card));
+    color: rgb(var(--fg));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: rgb(var(--accent) / 0.6);
+    box-shadow: 0 0 0 3px rgb(var(--accent) / 0.12);
+  }
+
+  .list-item {
+    @apply px-3 py-2 rounded-md transition-colors;
+    background: rgb(var(--card));
+    border: 1px solid rgb(var(--border));
+  }
+
+  .list-item:hover {
+    border-color: rgb(var(--accent) / 0.35);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .fade-in {
+    animation: fadeIn var(--transition-base) var(--easing);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(90deg,
+      rgb(var(--border) / 0.35),
+      rgb(var(--border) / 0.15),
+      rgb(var(--border) / 0.35));
+    background-size: 200% 100%;
+    animation: skeleton 1.4s ease infinite;
+  }
+
+@keyframes skeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
+/* Light/Dark adaptive overrides for legacy gray utility classes to follow design tokens */
+.bg-gray-900, .bg-gray-850 { background-color: rgb(var(--bg)) !important; }
+.bg-gray-800, .bg-gray-700 { background-color: rgb(var(--card)) !important; }
+.bg-gray-600 { background-color: rgb(var(--card)) !important; }
+.bg-gray-900\/60 { background-color: rgb(var(--bg) / 0.6) !important; }
+.bg-gray-900\/80 { background-color: rgb(var(--bg) / 0.8) !important; }
+.bg-gray-900\/90 { background-color: rgb(var(--bg) / 0.9) !important; }
+.bg-gray-800\/60 { background-color: rgb(var(--card) / 0.6) !important; }
+.bg-gray-800\/80 { background-color: rgb(var(--card) / 0.8) !important; }
+.bg-gray-800\/90 { background-color: rgb(var(--card) / 0.9) !important; }
+.border-gray-800, .border-gray-700, .border-gray-600 { border-color: rgb(var(--border)) !important; }
+.text-gray-100 { color: rgb(var(--fg)) !important; }
+.text-gray-200 { color: rgb(var(--fg)) !important; }
+.text-gray-300 { color: rgb(var(--fg) / 0.78) !important; }
+.text-gray-400 { color: rgb(var(--fg) / 0.68) !important; }
+.text-gray-500 { color: rgb(var(--fg) / 0.58) !important; }
+.text-gray-600 { color: rgb(var(--fg) / 0.46) !important; }
+
+  .gradient-text {
+    background: linear-gradient(120deg, rgb(var(--accent)), rgb(var(--accent-hover)));
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+}
+
+/* Design palette overrides for existing Tailwind classes (layout unchanged) */
+@layer utilities {
+  .bg-gray-900 {
+    background-color: rgb(var(--bg)) !important;
+  }
+  .bg-gray-850,
+  .bg-gray-800 {
+    background-color: rgb(var(--card)) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .border-gray-700 {
+    border-color: rgb(var(--border)) !important;
+  }
+  .text-gray-100,
+  .text-gray-200 {
+    color: rgb(var(--fg)) !important;
+  }
+  .text-gray-400,
+  .text-gray-500,
+  .text-gray-600 {
+    color: rgb(var(--muted)) !important;
+  }
+  .bg-gray-700 {
+    background-color: rgb(var(--card)) !important;
+  }
+  .bg-gray-600 {
+    background-color: rgb(var(--card)) !important;
+  }
+  .shadow-lg {
+    box-shadow: var(--shadow-lg) !important;
+  }
+  .shadow-md {
+    box-shadow: var(--shadow-md) !important;
+  }
+
+  .border-gray-800,
+  .border-gray-900 {
+    border-color: rgb(var(--border)) !important;
+  }
+
+  .text-gray-300 {
+    color: rgb(var(--fg) / 0.82) !important;
+  }
+
+  /* Map existing teal accents到设计主题的蓝色玻璃风 */
+  .bg-teal-700,
+  .bg-teal-600 {
+    background: linear-gradient(135deg, rgb(var(--accent)) 0%, rgb(var(--accent-hover)) 100%) !important;
+    color: white !important;
+    border-color: rgb(var(--accent) / 0.6) !important;
+    box-shadow: 0 12px 28px rgb(var(--accent) / 0.18) !important;
+  }
+  .bg-teal-700:hover,
+  .bg-teal-600:hover {
+    background: linear-gradient(135deg, rgb(var(--accent-hover)) 0%, rgb(var(--accent)) 100%) !important;
+    box-shadow: 0 14px 32px rgb(var(--accent) / 0.22) !important;
+  }
+  .text-teal-200,
+  .text-teal-300,
+  .text-teal-400 {
+    color: rgb(var(--accent)) !important;
+  }
+  .border-teal-600,
+  .border-teal-400 {
+    border-color: rgb(var(--accent)) !important;
+  }
+
+  /* 玻璃卡效果覆盖常用容器 */
+  .bg-gray-800.border,
+  .bg-gray-850.border,
+  .glass-card-auto {
+    background: rgb(var(--card)) !important;
+    border: 1px solid rgb(var(--border)) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: var(--shadow-md);
+  }
+}

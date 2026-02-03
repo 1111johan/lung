@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { ClipboardCheck, Sparkles, Shield, Database, CheckCircle2, AlertTriangle, Play } from 'lucide-react';
 import { uiStyles } from '../lib/theme';
 import { DigitalHumanAvatar } from './DigitalHuman';
@@ -203,7 +203,7 @@ export function PatientOnboarding() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <ClipboardCheck className="h-4 w-4 text-teal-400" />
-            患者建档（TB 指标）
+            个人健康档案
           </div>
           <span className="text-[11px] text-gray-500">必填信息 + AI 智能匹配</span>
         </div>

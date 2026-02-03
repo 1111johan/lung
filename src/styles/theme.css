@@ -3,19 +3,21 @@
 /* Light theme */
 :root {
   /* Base */
-  --bg: 238 244 252;           /* #EEF4FC */
+  --bg: 245 247 251;           /* #F5F7FB 冷白底 */
   --fg: 11 18 32;              /* #0B1220 */
   --muted: 11 18 32 / 0.62;
 
-  /* Surfaces */
-  --card: 255 255 255 / 0.78;
-  --border: 17 38 78 / 0.12;
-
-  /* Accent (Apple blue) */
-  --ring: 10 132 255;
-  --accent: 10 132 255;
+  /* Accent (Aurora blue/teal/purple) */
+  --accent: 10 132 255;        /* Apple Blue */
+  --accent2: 0 208 255;        /* Teal */
+  --accent3: 135 90 255;       /* Soft purple */
   --accent-hover: 47 149 255;
   --accent-press: 0 111 230;
+  --ring: 10 132 255;
+
+  /* Surfaces */
+  --card: 255 255 255 / 0.78;  /* 玻璃白 */
+  --border: 11 18 32 / 0.08;
 
   /* Semantic */
   --success: 34 197 94;
@@ -24,13 +26,13 @@
   --info: 59 130 246;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.12);
+  --shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.06);
+  --shadow-md: 0 12px 34px rgba(2, 6, 23, 0.10);
+  --shadow-lg: 0 20px 60px rgba(2, 6, 23, 0.18);
 
   /* Radii */
-  --radius-card: 16px;
-  --radius-ctl: 10px;
+  --radius-card: 20px;
+  --radius-ctl: 12px;
   --radius-sm: 8px;
 
   /* Motion */
@@ -42,28 +44,42 @@
 
 /* Dark theme */
 :root[data-theme="dark"] {
-  --bg: 11 18 32;
+  --bg: 8 12 20;               /* 深蓝黑 */
   --fg: 255 255 255 / 0.92;
   --muted: 255 255 255 / 0.62;
-  --card: 255 255 255 / 0.06;
-  --border: 255 255 255 / 0.12;
+  --card: 24 32 44;            /* 深色卡片实色 */
+  --border: 255 255 255 / 0.16;
   --ring: 10 132 255;
   --accent: 10 132 255;
-  --accent-hover: 47 149 255;
-  --accent-press: 0 111 230;
+  --accent2: 0 208 255;
+  --accent3: 135 90 255;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.20);
-  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.30);
-  --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 12px 34px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.55);
 }
 
 /* Background glow */
 body {
   background:
-    radial-gradient(1200px 700px at 15% 10%, rgb(var(--accent) / 0.12), transparent 58%),
-    radial-gradient(900px 600px at 85% 20%, rgb(var(--accent) / 0.08), transparent 58%),
-    linear-gradient(180deg, rgb(var(--accent) / 0.05), transparent 35%, rgb(var(--bg)) 100%),
+    linear-gradient(
+      180deg,
+      rgba(246 249 255 / 0.95) 0%,
+      rgba(250 252 255 / 0.97) 55%,
+      rgba(255 255 255 / 0.99) 100%
+    ),
+    radial-gradient(1200px 800px at 12% 8%, rgba(var(--accent), 0.08), transparent 60%),
+    radial-gradient(1000px 750px at 85% 12%, rgba(var(--accent2), 0.06), transparent 55%),
+    radial-gradient(900px 700px at 60% 90%, rgba(var(--accent3), 0.04), transparent 55%),
     rgb(var(--bg));
   background-attachment: fixed;
+}
+
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(1200px 800px at 15% 10%, rgba(var(--accent), 0.18), transparent 60%),
+    radial-gradient(900px 700px at 85% 15%, rgba(var(--accent2), 0.14), transparent 55%),
+    radial-gradient(800px 650px at 60% 88%, rgba(var(--accent3), 0.10), transparent 55%),
+    rgb(var(--bg));
 }
 
 /* Font rendering */

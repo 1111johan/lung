@@ -50,11 +50,11 @@ export function PatientQA() {
 
   return (
     <div className="flex-1 grid grid-cols-[2fr_1fr] gap-4 p-4 bg-gray-900 overflow-y-auto">
-      <div className="bg-gray-800 border border-gray-700 rounded-lg flex flex-col">
+      <div className="aurora-card glass-card-hover flex flex-col">
         <div className="p-3 border-b border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <MessageCircle className="h-4 w-4 text-teal-400" />
-            患者问答（TB 科普）
+            智能问答
           </div>
           <div className="flex items-center gap-2 text-[11px] text-gray-500">
             <ShieldAlert className="h-3 w-3 text-amber-400" />
@@ -87,7 +87,7 @@ export function PatientQA() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="请输入你的结核相关问题..."
-            className={uiStyles.input.textarea + ' min-h-[80px]'}
+            className={uiStyles.input.textarea + ' min-h-[80px] aurora-ctl'}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
@@ -122,14 +122,14 @@ export function PatientQA() {
       </div>
 
       <div className="space-y-3">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
+        <div className="aurora-card glass-card-hover p-3">
           <DigitalHumanAvatar speaking={speaking} />
           <div className="text-xs text-gray-500 mt-2 text-center">
             状态：{speaking ? '数字人正在朗读' : '待机'}
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-3">
+        <div className="aurora-card glass-card-hover p-3 space-y-3">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <Sparkles className="h-4 w-4 text-blue-400" />
             快捷提问
