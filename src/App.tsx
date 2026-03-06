@@ -22,6 +22,7 @@ import { DataProvider, useDataContext } from './lib/dataContext';
 import { PatientOnboarding } from './components/PatientOnboarding';
 import { PatientQA } from './components/PatientQA';
 import type { PageId } from './lib/pageTypes';
+import { useI18n } from './lib/i18n';
 
 const navItems: { id: PageId; label: string; icon: JSX.Element }[] = [
   { id: 'enroll', label: '个人健康档案', icon: <ClipboardList className="h-4 w-4" /> },
@@ -36,10 +37,11 @@ const navItems: { id: PageId; label: string; icon: JSX.Element }[] = [
 ];
 
 function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Record<string, string>) => void }) {
+  const { tr } = useI18n();
   const { patients, followups, reports } = useDataContext();
   const highRisk = patients.filter((p) => p.risk_level === 'high').length;
   const overdue = followups.filter((f) => f.status === 'overdue').length;
-  const positiveToday = reports.filter((r) => r.status === 'pending_sign' || r.status === 'signed').length;
+  const positiveToday = reports.filter((r) => r.status === 'finalized' || r.status === 'reported').length;
   const lowRisk = patients.filter((p) => p.risk_level === 'low').length;
   const mediumRisk = patients.filter((p) => p.risk_level === 'medium').length;
 
@@ -53,9 +55,9 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
       { label: 'W-3', suspect: 11, positive: 3, cleared: 7 },
       { label: 'W-2', suspect: 14, positive: 5, cleared: 6 },
       { label: 'W-1', suspect: 15, positive: 6, cleared: 8 },
-      { label: '本周', suspect: 13, positive: 5, cleared: 7 },
+      { label: tr('本周'), suspect: 13, positive: 5, cleared: 7 },
     ];
-  }, []);
+  }, [tr]);
 
   const topRisk = [...patients]
     .sort((a, b) => (b.risk_score || 0) - (a.risk_score || 0))
@@ -79,32 +81,32 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
     filter?: Record<string, string>;
   }[] = [
     {
-      title: '待审核影像',
+      title: tr('待审核影像'),
       count: patients.filter((p) => p.medical_images?.some((m) => m.status === 'reviewing')).length,
-      action: '转到阅片',
+      action: tr('转到阅片'),
       page: 'workstation' as PageId,
       filter: { status: 'reviewing' },
     },
     {
-      title: '待补全信息',
+      title: tr('待补全信息'),
       count: patients.filter((p) => !p.contact_phone || !p.region).length,
-      action: '完善建档',
+      action: tr('完善建档'),
       page: 'enroll' as PageId,
       filter: { missing: 'contact' },
     },
     {
-      title: '待随访',
+      title: tr('待随访'),
       count: followups.filter((f) => f.status === 'pending').length,
-      action: '安排回访',
+      action: tr('安排回访'),
       page: 'followup' as PageId,
       filter: { status: 'pending' },
     },
     {
-      title: '待上报/签署',
-      count: reports.filter((r) => r.status === 'pending_sign').length,
-      action: '前往报告',
+      title: tr('待上报/签署'),
+      count: reports.filter((r) => r.status === 'finalized').length,
+      action: tr('前往报告'),
       page: 'reports' as PageId,
-      filter: { status: 'pending_sign' },
+      filter: { status: 'finalized' },
     },
   ];
 
@@ -119,35 +121,35 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
 
   const kpiCards = [
     {
-      label: '待筛查',
+      label: tr('待筛查'),
       value: patients.length.toString(),
       accent: 'bg-blue-600',
-      trend: '+8% 较上周',
-      hint: '待筛查=已登记但未完成影像/报告',
+      trend: tr('+8% 较上周'),
+      hint: tr('待筛查=已登记但未完成影像/报告'),
       onClick: () => drillTo('workstation'),
     },
     {
-      label: '高危病例',
+      label: tr('高危病例'),
       value: highRisk.toString(),
       accent: 'bg-red-600',
-      trend: '+2 较昨日',
-      hint: '高危=AI 风险≥0.7 或医生标记',
+      trend: tr('+2 较昨日'),
+      hint: tr('高危=AI 风险≥0.7 或医生标记'),
       onClick: () => drillTo('workstation', { risk: 'high' }),
     },
     {
-      label: '逾期随访',
+      label: tr('逾期随访'),
       value: overdue.toString(),
       accent: 'bg-amber-500',
-      trend: '-1 较昨日',
-      hint: '逾期=随访 dueAt < 今天且未完成',
+      trend: tr('-1 较昨日'),
+      hint: tr('逾期=随访 dueAt < 今天且未完成'),
       onClick: () => drillTo('followup'),
     },
     {
-      label: '阳性确认/签署',
+      label: tr('阳性确认/签署'),
       value: positiveToday.toString(),
       accent: 'bg-teal-500',
-      trend: '+1 今日新增',
-      hint: '含待签署与已签署报告数量',
+      trend: tr('+1 今日新增'),
+      hint: tr('含已定稿与已上报报告数量'),
       onClick: () => drillTo('reports'),
     },
   ];
@@ -156,18 +158,18 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
     const analysis = p.medical_images?.[0]?.ai_analyses?.[0];
     const tags: string[] = [];
     if (p.chief_complaint) tags.push(p.chief_complaint);
-    if (p.tb_history) tags.push('既往结核');
+    if (p.tb_history) tags.push(tr('既往结核'));
     if (p.ppd_test_result?.includes('positive')) tags.push('PPD+');
-    if (analysis?.tb_probability && analysis.tb_probability >= 70) tags.push('AI高概率');
+    if (analysis?.tb_probability && analysis.tb_probability >= 70) tags.push(tr('AI高概率'));
     return tags.slice(0, 2);
   };
 
   const explainExam = (p: PatientWithAnalysis) => {
     const img = p.medical_images?.[0];
-    if (!img) return '影像未上传';
-    if (img.status === 'reviewed' || img.status === 'reported') return '影像已审核';
-    if (img.status === 'reviewing') return '影像待审核';
-    return '影像已上传';
+    if (!img) return tr('影像未上传');
+    if (img.status === 'reviewed' || img.status === 'reported') return tr('影像已审核');
+    if (img.status === 'reviewing') return tr('影像待审核');
+    return tr('影像已上传');
   };
 
   const sortedFollowups = [...upcomingFollowups].sort((a, b) => {
@@ -184,9 +186,9 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
 
   const daysDelta = (date: string) => {
     const diff = Math.floor((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    if (diff < 0) return `逾期 ${Math.abs(diff)} 天`;
-    if (diff === 0) return '今日到期';
-    return `剩余 ${diff} 天`;
+    if (diff < 0) return `${tr('逾期')} ${Math.abs(diff)} ${tr('天')}`;
+    if (diff === 0) return tr('今日到期');
+    return `${tr('剩余')} ${diff} ${tr('天')}`;
   };
   return (
     <div className="p-4 space-y-4 h-full overflow-y-auto bg-[rgb(var(--bg))]">
@@ -205,10 +207,10 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
             </div>
             <div className="flex items-center gap-3 mt-2">
               <div className={`h-8 w-1 rounded ${card.accent}`}></div>
-              <div className="text-sm text-gray-200">点击查看</div>
+              <div className="text-sm text-gray-200">{tr('点击查看')}</div>
             </div>
             <div className="mt-2 text-[11px] text-teal-200">{card.trend}</div>
-            <div className="text-[11px] text-gray-500 mt-1">更新于 {formatDate(new Date().toISOString())}</div>
+            <div className="text-[11px] text-gray-500 mt-1">{tr('更新于')} {formatDate(new Date().toISOString())}</div>
           </button>
         ))}
       </div>
@@ -217,7 +219,7 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
         <div className="aurora-card glass-card-hover p-3 space-y-2">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <BarChart3 className="h-4 w-4 text-blue-400" />
-            高危患者 Top5
+            {tr('高危患者')} Top5
           </div>
           <div className="space-y-2">
             {topRisk.map((p) => {
@@ -230,11 +232,11 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
                 >
                   <div className="flex items-center justify-between">
                     <div className="text-gray-200 font-semibold">
-                      {p.name} <span className="text-gray-500">({p.age}岁)</span>
+                      {p.name} <span className="text-gray-500">({p.age}{tr('岁')})</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-amber-200">{Math.round((p.risk_score || 0) * 100)}%</span>
-                      <span className={`px-2 py-0.5 rounded text-[11px] ${risk.color.badge} ${risk.color.badgeText}`}>{risk.label}</span>
+                      <span className={`px-2 py-0.5 rounded text-[11px] ${risk.color.badge} ${risk.color.badgeText}`}>{tr(risk.label)}</span>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -243,7 +245,7 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
                         {t}
                       </span>
                     ))}
-                    {tags.length === 0 && <span className="text-gray-500">暂无症状/风险标签</span>}
+                    {tags.length === 0 && <span className="text-gray-500">{tr('暂无症状/风险标签')}</span>}
                   </div>
                   <div className="text-[11px] text-gray-400 flex justify-between items-center">
                     <span>{explainExam(p)}</span>
@@ -251,20 +253,20 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
                       onClick={() => drillTo('workstation')}
                       className="px-2 py-0.5 rounded border border-teal-600 text-teal-200 hover:bg-teal-900/40"
                     >
-                      复核影像
+                      {tr('复核影像')}
                     </button>
                   </div>
                 </div>
               );
             })}
-            {topRisk.length === 0 && <div className="text-gray-500 text-xs">暂无高危患者</div>}
+            {topRisk.length === 0 && <div className="text-gray-500 text-xs">{tr('暂无高危患者')}</div>}
           </div>
         </div>
 
         <div className="aurora-card glass-card-hover p-3 space-y-2">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <Clock4 className="h-4 w-4 text-amber-400" />
-            随访提醒
+            {tr('随访提醒')}
           </div>
           <div className="space-y-2">
             {sortedFollowups.map((f) => (
@@ -281,25 +283,25 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
                         : 'bg-emerald-900 text-emerald-200'
                     }`}
                   >
-                    {f.status === 'overdue' ? '逾期' : f.status === 'pending' ? '待随访' : '已完成'}
+                    {f.status === 'overdue' ? tr('逾期') : f.status === 'pending' ? tr('待随访') : tr('已完成')}
                   </span>
                   <button
                     onClick={() => drillTo('followup')}
                     className="text-[11px] px-2 py-0.5 rounded border border-teal-600 text-teal-200 hover:bg-teal-900/40 transition-colors"
                   >
-                    处理
+                    {tr('处理')}
                   </button>
                 </div>
               </div>
             ))}
-            {sortedFollowups.length === 0 && <div className="text-gray-500 text-xs">暂无待随访任务</div>}
+            {sortedFollowups.length === 0 && <div className="text-gray-500 text-xs">{tr('暂无待随访任务')}</div>}
           </div>
         </div>
 
         <div className="aurora-card glass-card-hover p-3 space-y-2">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <Activity className="h-4 w-4 text-emerald-400" />
-            最新报告
+            {tr('最新报告')}
           </div>
           <div className="space-y-2">
             {latestReports.map((r) => (
@@ -307,24 +309,22 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
                 <div className="text-gray-200 flex items-center gap-2">
                   <span className="font-mono text-blue-300">{r.id}</span>
                   <span className="text-gray-400">{formatDate(r.updatedAt)}</span>
-                  <span className="text-gray-500">· Dr.张 (最近操作)</span>
+                  <span className="text-gray-500">· Dr. Zhang ({tr('最近操作')})</span>
                 </div>
                 <span
                   className={`px-2 py-0.5 rounded ${
-                    r.status === 'pending_sign'
+                    r.status === 'finalized'
                       ? 'bg-amber-900 text-amber-200'
-                      : r.status === 'signed'
+                      : r.status === 'reported'
                       ? 'bg-emerald-900 text-emerald-200'
-                      : r.status === 'retake'
-                      ? 'bg-red-900 text-red-200'
                       : 'bg-[rgb(var(--card))] text-gray-300'
                   }`}
                 >
-                  {r.status === 'pending_sign' ? '待签署' : r.status === 'signed' ? '已签署' : r.status === 'retake' ? '重拍' : '草稿'}
+                  {r.status === 'finalized' ? tr('已定稿') : r.status === 'reported' ? tr('已上报') : tr('草稿')}
                 </span>
               </div>
             ))}
-            {latestReports.length === 0 && <div className="text-gray-500 text-xs">暂无报告</div>}
+            {latestReports.length === 0 && <div className="text-gray-500 text-xs">{tr('暂无报告')}</div>}
           </div>
         </div>
       </div>
@@ -334,9 +334,9 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2 text-gray-200 text-sm">
               <Activity className="h-4 w-4 text-teal-400" />
-              近 8 周趋势（疑似 / 阳性 / 排除）
+              {tr('近 8 周趋势（疑似 / 阳性 / 排除）')}
             </div>
-            <span className="text-[11px] text-gray-500">可替换为 7/30/90 天</span>
+            <span className="text-[11px] text-gray-500">{tr('可替换为 7/30/90 天')}</span>
           </div>
           <div className="flex items-end gap-2 h-40">
             {trend.map((p) => (
@@ -351,16 +351,16 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
             ))}
           </div>
           <div className="flex justify-center gap-4 text-[11px] text-gray-400 mt-2">
-            <span className="flex items-center gap-1"><span className="w-3 h-1 bg-amber-500 inline-block rounded"></span>疑似</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-1 bg-red-500 inline-block rounded"></span>阳性</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-1 bg-emerald-500 inline-block rounded"></span>排除/复查</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-1 bg-amber-500 inline-block rounded"></span>{tr('疑似')}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-1 bg-red-500 inline-block rounded"></span>{tr('阳性')}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-1 bg-emerald-500 inline-block rounded"></span>{tr('排除/复查')}</span>
           </div>
         </div>
 
         <div className="aurora-card glass-card-hover p-3 space-y-3">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <ClipboardList className="h-4 w-4 text-blue-400" />
-            今日待办
+            {tr('今日待办')}
           </div>
           <div className="space-y-2">
             {tasks.map((t) => (
@@ -381,29 +381,29 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-gray-200 text-sm">
               <Shield className="h-4 w-4 text-rose-400" />
-              风险分层分布
+              {tr('风险分层分布')}
             </div>
             <div className="space-y-1 text-[11px] text-gray-300">
               <div className="flex items-center gap-2">
-                <span className="w-10 text-gray-400">高危</span>
+                <span className="w-10 text-gray-400">{tr('高危')}</span>
                 <div className="flex-1 h-2 rounded bg-gray-700 overflow-hidden">
                   <div className="h-2 bg-red-500" style={{ width: `${patients.length ? (highRisk / patients.length) * 100 : 0}%` }}></div>
                 </div>
-                <span className="w-12 text-right text-red-200">{highRisk} 人</span>
+                <span className="w-12 text-right text-red-200">{highRisk} {tr('人')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-10 text-gray-400">中危</span>
+                <span className="w-10 text-gray-400">{tr('中危')}</span>
                 <div className="flex-1 h-2 rounded bg-gray-700 overflow-hidden">
                   <div className="h-2 bg-amber-500" style={{ width: `${patients.length ? (mediumRisk / patients.length) * 100 : 0}%` }}></div>
                 </div>
-                <span className="w-12 text-right text-amber-200">{mediumRisk} 人</span>
+                <span className="w-12 text-right text-amber-200">{mediumRisk} {tr('人')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-10 text-gray-400">低危</span>
+                <span className="w-10 text-gray-400">{tr('低危')}</span>
                 <div className="flex-1 h-2 rounded bg-gray-700 overflow-hidden">
                   <div className="h-2 bg-emerald-500" style={{ width: `${patients.length ? (lowRisk / patients.length) * 100 : 0}%` }}></div>
                 </div>
-                <span className="w-12 text-right text-emerald-200">{lowRisk} 人</span>
+                <span className="w-12 text-right text-emerald-200">{lowRisk} {tr('人')}</span>
               </div>
             </div>
           </div>
@@ -414,22 +414,22 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
 }
 
 function ReportsPage() {
+  const { tr } = useI18n();
   const { reports, patients } = useDataContext();
   const getPatientName = (id: string) => patients.find((p) => p.id === id)?.name || id;
   const statusLabel = (status: string) => {
-    if (status === 'pending_sign') return '待签署';
-    if (status === 'signed') return '已签署';
-    if (status === 'retake') return '退回重拍';
-    return '草稿';
+    if (status === 'finalized') return tr('已定稿');
+    if (status === 'reported') return tr('已上报');
+    return tr('草稿');
   };
   return (
     <div className="p-4 h-full overflow-y-auto bg-[rgb(var(--bg))]">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-gray-200 text-sm">
           <FileText className="h-4 w-4 text-blue-400" />
-          报告中心
+          {tr('报告中心')}
         </div>
-        <span className="text-[11px] text-gray-500">QA：必填校验 / 所见-印象一致性提示</span>
+        <span className="text-[11px] text-gray-500">{tr('QA：必填校验 / 所见-印象一致性提示')}</span>
       </div>
 
       <div className="aurora-card glass-card-hover divide-y divide-gray-700">
@@ -443,13 +443,13 @@ function ReportsPage() {
               </div>
             </div>
             <div className="flex items-center gap-3 text-xs">
-              <span className="text-gray-300">{row.type === 'screening' ? '筛查' : '转诊'}</span>
+              <span className="text-gray-300">{row.type === 'screening' ? tr('筛查') : tr('转诊')}</span>
               <span className={`px-2 py-1 rounded ${
-                row.status === 'pending_sign' ? 'bg-amber-900 text-amber-200' :
-                row.status === 'signed' ? 'bg-emerald-900 text-emerald-200' :
-                'bg-red-900 text-red-200'
+                row.status === 'finalized' ? 'bg-amber-900 text-amber-200' :
+                row.status === 'reported' ? 'bg-emerald-900 text-emerald-200' :
+                'bg-gray-800 text-gray-300'
               }`}>{statusLabel(row.status)}</span>
-              <span className="text-amber-300">{row.qaNote || '—'}</span>
+              <span className="text-amber-300">{row.qaNote || tr('—')}</span>
             </div>
           </div>
         ))}
@@ -459,6 +459,7 @@ function ReportsPage() {
 }
 
 function ReferralsPage() {
+  const { tr } = useI18n();
   const { referrals, patients, updateReferralStatus } = useDataContext();
   const getPatientName = (id: string) => patients.find((p) => p.id === id)?.name || id;
   return (
@@ -466,9 +467,9 @@ function ReferralsPage() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-gray-200 text-sm">
           <ClipboardList className="h-4 w-4 text-emerald-400" />
-          转诊与上报
+          {tr('转诊与上报')}
         </div>
-        <span className="text-[11px] text-gray-500">必填字段校验，生成通知书/转诊单</span>
+        <span className="text-[11px] text-gray-500">{tr('必填字段校验，生成通知书/转诊单')}</span>
       </div>
       <div className="aurora-card glass-card-hover divide-y divide-gray-700">
         {referrals.map((row) => (
@@ -484,15 +485,15 @@ function ReferralsPage() {
                 'bg-emerald-900 text-emerald-200'
               }`}>{row.status}</span>
               <span className={row.missingFields.length === 0 ? 'text-gray-400' : 'text-red-300'}>
-                缺失: {row.missingFields.join('、') || '—'}
+                {tr('缺失')}: {row.missingFields.join('、') || tr('—')}
               </span>
               <span className="text-gray-500">{row.updatedAt}</span>
               <div className="flex gap-1">
                 <button onClick={() => updateReferralStatus(row.id, 'generated')} className={uiStyles.button.outline + ' text-[11px] px-2 py-1'}>
-                  生成通知书
+                  {tr('生成通知书')}
                 </button>
                 <button onClick={() => updateReferralStatus(row.id, 'submitted')} className={uiStyles.button.primary + ' text-[11px] px-2 py-1'}>
-                  提交上报
+                  {tr('提交上报')}
                 </button>
               </div>
             </div>
@@ -504,6 +505,7 @@ function ReferralsPage() {
 }
 
 function FollowupPage() {
+  const { tr } = useI18n();
   const { followups, patients, updateFollowupStatus } = useDataContext();
   const getPatientName = (id: string) => patients.find((p) => p.id === id)?.name || id;
   return (
@@ -511,9 +513,9 @@ function FollowupPage() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-gray-200 text-sm">
           <Clock4 className="h-4 w-4 text-amber-400" />
-          随访管理
+          {tr('随访管理')}
         </div>
-        <span className="text-[11px] text-gray-500">节点：2周 / 1月 / 3月；逾期自动提醒</span>
+        <span className="text-[11px] text-gray-500">{tr('节点：2周 / 1月 / 3月；逾期自动提醒')}</span>
       </div>
       <div className="aurora-card glass-card-hover divide-y divide-gray-700">
         {followups.map((row) => (
@@ -529,13 +531,13 @@ function FollowupPage() {
                 row.status === 'overdue' ? 'bg-red-900 text-red-200' :
                 row.status === 'pending' ? 'bg-amber-900 text-amber-200' :
                 'bg-emerald-900 text-emerald-200'
-              }`}>{row.status === 'overdue' ? '逾期' : row.status === 'pending' ? '待随访' : '已完成'}</span>
+              }`}>{row.status === 'overdue' ? tr('逾期') : row.status === 'pending' ? tr('待随访') : tr('已完成')}</span>
               <div className="flex gap-1">
                 <button onClick={() => updateFollowupStatus(row.id, 'done')} className={uiStyles.button.primary + ' text-[11px] px-2 py-1'}>
-                  完成
+                  {tr('完成')}
                 </button>
                 <button onClick={() => updateFollowupStatus(row.id, 'overdue')} className={uiStyles.button.secondary + ' text-[11px] px-2 py-1'}>
-                  标记逾期
+                  {tr('标记逾期')}
                 </button>
               </div>
             </div>
@@ -547,32 +549,33 @@ function FollowupPage() {
 }
 
 function ResearchPage() {
+  const { tr } = useI18n();
   return (
     <div className="p-4 h-full overflow-y-auto bg-[rgb(var(--bg))] space-y-3">
       <div className="flex items-center gap-2 text-gray-200 text-sm">
         <Stethoscope className="h-4 w-4 text-teal-400" />
-        科研与教学（脱敏导出/病例库）
+        {tr('科研与教学（脱敏导出/病例库）')}
       </div>
       <div className="aurora-card glass-card-hover p-3 text-sm space-y-3">
-        <div className="text-gray-300">队列构建：地区 / 征象 / 检验 / 随访齐全</div>
+        <div className="text-gray-300">{tr('队列构建：地区 / 征象 / 检验 / 随访齐全')}</div>
         <div className="flex gap-2">
-          <input className={uiStyles.input.default + ' flex-1'} placeholder="示例：百色 + 高危 + 结节" />
-          <button className={uiStyles.button.primary}>生成队列</button>
+          <input className={uiStyles.input.default + ' flex-1'} placeholder={tr('示例：百色 + 高危 + 结节')} />
+          <button className={uiStyles.button.primary}>{tr('生成队列')}</button>
         </div>
         <div className="flex gap-2">
-          <button className={uiStyles.button.secondary}>导出脱敏 JSON</button>
-          <button className={uiStyles.button.secondary}>导出 ROI/Mask</button>
+          <button className={uiStyles.button.secondary}>{tr('导出脱敏 JSON')}</button>
+          <button className={uiStyles.button.secondary}>{tr('导出 ROI/Mask')}</button>
         </div>
       </div>
       <div className="aurora-card glass-card-hover p-3 text-sm">
         <div className="text-gray-200 mb-2 flex items-center gap-2">
           <Users className="h-4 w-4 text-blue-300" />
-          典型病例库（示例）
+          {tr('典型病例库（示例）')}
         </div>
         <div className="grid grid-cols-3 gap-2">
           {['结节', '树芽征', '钙化'].map((tag) => (
             <div key={tag} className="bg-[rgb(var(--bg))] border border-[rgb(var(--border))] rounded p-2 text-gray-300 text-xs">
-              {tag} • 3 例占位
+              {tr(tag)} • {tr('3 例占位')}
             </div>
           ))}
         </div>
@@ -582,12 +585,13 @@ function ResearchPage() {
 }
 
 function AuditPage() {
+  const { tr } = useI18n();
   const { auditLogs } = useDataContext();
   return (
     <div className="p-4 h-full overflow-y-auto bg-[rgb(var(--bg))] space-y-3">
       <div className="flex items-center gap-2 text-gray-200 text-sm">
         <Shield className="h-4 w-4 text-emerald-400" />
-        系统与审计
+        {tr('系统与审计')}
       </div>
       <div className="aurora-card glass-card-hover divide-y divide-gray-700">
         {auditLogs.map((row) => (
@@ -605,7 +609,7 @@ function AuditPage() {
         ))}
       </div>
       <div className="aurora-card glass-card-hover p-3 text-xs text-gray-300">
-        当前模型：GX-TB-v4.2 • 阈值 0.75 • 角色：影像科/呼吸感染科/公卫护士（MVP）
+        {tr('当前模型：GX-TB-v4.2 • 阈值 0.75 • 角色：影像科/呼吸感染科/公卫护士（MVP）')}
       </div>
     </div>
   );
@@ -643,6 +647,7 @@ function WorkstationPage({
 }
 
 function App() {
+  const { tr } = useI18n();
   const [activePage, setActivePage] = useState<PageId>('enroll');
   const [selectedPatient, setSelectedPatient] = useState<PatientWithAnalysis | null>(null);
   const [selectedImage, setSelectedImage] = useState<MedicalImage | null>(null);
@@ -716,7 +721,7 @@ function App() {
                 }`}
               >
                 {item.icon}
-                {item.label}
+                {tr(item.label)}
               </button>
             ))}
           </div>

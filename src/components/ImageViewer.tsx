@@ -5,6 +5,7 @@ import type { AnalysisFinding } from '../lib/analysisTypes';
 import { filterFindings } from '../lib/analysisUtils';
 import { getImageStatusStyle } from '../lib/theme';
 import { DEFAULT_WINDOW_LEVEL, ZOOM_CONFIG, DATE_FORMAT } from '../lib/constants';
+import { useI18n } from '../lib/i18n';
 
 interface ImageViewerProps {
   image: MedicalImage | null;
@@ -12,6 +13,7 @@ interface ImageViewerProps {
 }
 
 export function ImageViewer({ image, analysis }: ImageViewerProps) {
+  const { tr } = useI18n();
   const [aiOverlay, setAiOverlay] = useState(true);
   const [zoom, setZoom] = useState<number>(ZOOM_CONFIG.default);
 
@@ -20,8 +22,8 @@ export function ImageViewer({ image, analysis }: ImageViewerProps) {
       <section className="relative bg-black flex flex-col items-center justify-center">
         <div className="text-gray-500 text-center">
           <div className="text-6xl mb-4">🖼️</div>
-          <p className="text-lg">请从左侧队列选择患者</p>
-          <p className="text-sm mt-2 text-gray-600">DICOM 影像查看器已就绪</p>
+          <p className="text-lg">{tr('请从左侧队列选择患者')}</p>
+          <p className="text-sm mt-2 text-gray-600">{tr('DICOM 影像查看器已就绪')}</p>
         </div>
       </section>
     );
@@ -35,23 +37,23 @@ export function ImageViewer({ image, analysis }: ImageViewerProps) {
   return (
     <section className="relative viewer-bg flex flex-col flex-1 min-w-0">
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 viewer-toolbar px-4 py-2 flex gap-4 z-10 shadow-lg">
-        <button className="viewer-tool-button p-1" title="窗宽窗位">
+        <button className="viewer-tool-button p-1" title={tr('窗宽窗位')}>
           <Maximize2 className="h-4 w-4" />
         </button>
-        <button className="viewer-tool-button p-1" title="测量工具">
+        <button className="viewer-tool-button p-1" title={tr('测量工具')}>
           <Ruler className="h-4 w-4" />
         </button>
         <button
           onClick={() => setZoom(Math.min(zoom + ZOOM_CONFIG.step, ZOOM_CONFIG.max))}
           className="viewer-tool-button p-1"
-          title="放大"
+          title={tr('放大')}
         >
           <ZoomIn className="h-4 w-4" />
         </button>
         <button
           onClick={() => setZoom(Math.max(zoom - ZOOM_CONFIG.step, ZOOM_CONFIG.min))}
           className="viewer-tool-button p-1"
-          title="缩小"
+          title={tr('缩小')}
         >
           <ZoomOut className="h-4 w-4" />
         </button>
@@ -63,10 +65,10 @@ export function ImageViewer({ image, analysis }: ImageViewerProps) {
           className={`viewer-tool-button font-bold flex items-center gap-2 px-2 py-1 transition-all ${
             aiOverlay ? 'active' : ''
           }`}
-          title={aiOverlay ? 'AI标注已开启' : 'AI标注已关闭'}
+          title={aiOverlay ? tr('AI标注已开启') : tr('AI标注已关闭')}
         >
           {aiOverlay ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          <span className="text-xs">AI 标注</span>
+          <span className="text-xs">{tr('AI 标注')}</span>
           {aiOverlay && <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>}
         </button>
       </div>
@@ -96,7 +98,7 @@ export function ImageViewer({ image, analysis }: ImageViewerProps) {
                 <div className="text-gray-600 text-xs mt-2">
                   {new Date(image.acquisition_date).toLocaleString(DATE_FORMAT.display, DATE_FORMAT.dateTime)}
                 </div>
-                <div className="mt-6 text-gray-700 text-xs">[ DICOM 影像渲染区域 ]</div>
+                <div className="mt-6 text-gray-700 text-xs">{tr('[ DICOM 影像渲染区域 ]')}</div>
               </div>
             </div>
           )}
@@ -115,7 +117,7 @@ export function ImageViewer({ image, analysis }: ImageViewerProps) {
                   }}
                 >
                   <div className="absolute -top-6 left-0 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap">
-                    {finding.type || '病灶'}
+                    {finding.type || tr('病灶')}
                   </div>
                 </div>
               ))}
@@ -131,9 +133,9 @@ export function ImageViewer({ image, analysis }: ImageViewerProps) {
 
       <div className="absolute bottom-4 left-4 text-xs text-gray-400 bg-gray-900/80 px-3 py-2 rounded space-y-1">
         <div className="font-semibold text-gray-300">{image.patient_id.slice(0, 8)}...</div>
-        <div>序列: {image.series_description || 'Standard PA'}</div>
+        <div>{tr('序列')}: {image.series_description || 'Standard PA'}</div>
         <div>
-          状态: <span className={getImageStatusStyle(image.status).color}>{getImageStatusStyle(image.status).label}</span>
+          {tr('状态')}: <span className={getImageStatusStyle(image.status).color}>{tr(getImageStatusStyle(image.status).label)}</span>
         </div>
       </div>
     </section>

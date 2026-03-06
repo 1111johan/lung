@@ -7,6 +7,7 @@ import { PATIENT_DISPLAY } from '../lib/constants';
 import { useDataContext } from '../lib/dataContext';
 import type { AnalysisFinding } from '../lib/analysisTypes';
 import { filterFindings } from '../lib/analysisUtils';
+import { useI18n } from '../lib/i18n';
 
 interface PatientQueueProps {
   onSelectPatient: (patient: PatientWithAnalysis | null) => void;
@@ -14,6 +15,7 @@ interface PatientQueueProps {
 }
 
 export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueueProps) {
+  const { tr } = useI18n();
   const { patients, removePatient } = useDataContext();
 
   const sortedPatients = useMemo(() => {
@@ -42,11 +44,11 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
   return (
     <aside className={`${uiStyles.sidebar.default} patient-queue workstation-panel workstation-panel-strong`}>
       <div className="p-3 border-b border-gray-700 font-medium flex justify-between items-center">
-        <span className="text-gray-200">待筛查 ({sortedPatients.length})</span>
+        <span className="text-gray-200">{tr('待筛查')} ({sortedPatients.length})</span>
         {highRiskCount > 0 && (
           <span className="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" />
-            高危优先
+            {tr('高危优先')}
           </span>
         )}
       </div>
@@ -74,7 +76,7 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
             >
               <div className="flex justify-between mb-1 items-center gap-2">
                 <span className="font-bold text-gray-200">
-                  {PATIENT_DISPLAY.nameMaskPattern(patient.name)} ({patient.gender === 'male' ? '男' : '女'}, {patient.age}岁)
+                  {PATIENT_DISPLAY.nameMaskPattern(patient.name)} ({patient.gender === 'male' ? tr('男') : tr('女')}, {patient.age}{tr('岁')})
                 </span>
                 <div className="flex items-center gap-2">
                   {analysis && (
@@ -86,7 +88,7 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (!window.confirm('确认删除该待筛查患者？')) return;
+                        if (!window.confirm(tr('确认删除该待筛查患者？'))) return;
                         removePatient(patient.id);
                         if (selectedPatientId === patient.id) {
                           const next = sortedPatients.find((p) => p.id !== patient.id) || null;
@@ -94,10 +96,10 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
                         }
                       }}
                       className="text-[10px] px-2 py-0.5 rounded border border-red-400/40 text-red-300 hover:bg-red-900/30 flex items-center gap-1"
-                      title="删除待筛查患者"
+                      title={tr('删除待筛查患者')}
                     >
                       <Trash2 className="h-3 w-3" />
-                      删除
+                      {tr('删除')}
                     </button>
                   )}
                 </div>
@@ -120,12 +122,12 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
                 )}
                 {patient.chief_complaint && (
                   <span className="text-[10px] bg-gray-700 px-1.5 py-0.5 rounded-full text-[rgb(var(--warning))]">
-                    主诉: {patient.chief_complaint}
+                    {tr('主诉')}: {patient.chief_complaint}
                   </span>
                 )}
                 {patient.tb_history && (
                   <span className="text-[10px] bg-gray-700 px-1.5 py-0.5 rounded-full text-[rgb(var(--warning))]">
-                    既往TB史
+                    {tr('既往TB史')}
                   </span>
                 )}
               </div>

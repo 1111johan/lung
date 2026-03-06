@@ -1,11 +1,34 @@
+import type { AppLocale } from './i18n';
+
 declare global {
   interface Window {
     __setMouth?: (v: number) => void;
   }
 }
 
-export function speakCN(
+const speechLangByLocale: Record<AppLocale, string> = {
+  zh: 'zh-CN',
+  en: 'en-US',
+  th: 'th-TH',
+  id: 'id-ID',
+  ms: 'ms-MY',
+};
+
+function pickVoice(lang: string) {
+  const voices = window.speechSynthesis.getVoices();
+  const exact = voices.find((v) => (v.lang || '').toLowerCase() === lang.toLowerCase());
+  if (exact) return exact;
+
+  const prefix = lang.split('-')[0].toLowerCase();
+  const close = voices.find((v) => (v.lang || '').toLowerCase().startsWith(prefix));
+  if (close) return close;
+
+  return null;
+}
+
+export function speakText(
   text: string,
+  locale: AppLocale,
   onStart?: () => void,
   onEnd?: () => void
 ) {
@@ -16,13 +39,13 @@ export function speakCN(
   }
 
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'zh-CN';
+  const targetLang = speechLangByLocale[locale] || 'en-US';
+  utterance.lang = targetLang;
   utterance.rate = 1.0;
   utterance.pitch = 1.0;
 
-  const voices = window.speechSynthesis.getVoices();
-  const zh = voices.find((v) => (v.lang || '').toLowerCase().includes('zh'));
-  if (zh) utterance.voice = zh;
+  const voice = pickVoice(targetLang);
+  if (voice) utterance.voice = voice;
 
   utterance.onstart = () => onStart?.();
   utterance.onend = () => {
@@ -38,6 +61,14 @@ export function speakCN(
 
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utterance);
+}
+
+export function speakCN(
+  text: string,
+  onStart?: () => void,
+  onEnd?: () => void
+) {
+  speakText(text, 'zh', onStart, onEnd);
 }
 
 export function stopSpeaking() {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Moon, Sun, MonitorSmartphone } from 'lucide-react';
 import { applyTheme, ThemeMode } from '../lib/theme';
+import { useI18n } from '../lib/i18n';
 
 const modes: ThemeMode[] = ['system', 'light', 'dark'];
 
@@ -10,6 +11,7 @@ function next(mode: ThemeMode): ThemeMode {
 }
 
 export function ThemeToggleSimple() {
+  const { tr } = useI18n();
   const [mode, setMode] = useState<ThemeMode>('system');
 
   useEffect(() => {
@@ -21,13 +23,13 @@ export function ThemeToggleSimple() {
     mode === 'light' ? <Sun className="h-4 w-4" /> :
     <MonitorSmartphone className="h-4 w-4" />;
 
-  const label = mode === 'dark' ? '深色' : mode === 'light' ? '浅色' : '跟随系统';
+  const label = mode === 'dark' ? tr('深色') : mode === 'light' ? tr('浅色') : tr('跟随系统');
 
   return (
     <button
       onClick={() => setMode((m) => next(m))}
       className="glass-card-sm flex items-center gap-2 px-3 py-1.5 text-xs text-gray-200 border border-gray-700 hover:border-teal-500 transition-colors"
-      title="切换主题（系统/浅色/深色）"
+      title={tr('切换主题（系统/浅色/深色）')}
     >
       {icon}
       <span>{label}</span>

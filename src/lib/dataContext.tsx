@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import type { PatientWithAnalysis } from './database.types';
 import { fetchPatientsWithAnalysis } from './supabaseService';
 
-export type ReportStatus = 'draft' | 'pending_sign' | 'signed' | 'retake';
+export type ReportStatus = 'draft' | 'finalized' | 'reported';
 export type ReferralStatus = 'pending' | 'generated' | 'submitted';
 export type FollowupStatus = 'pending' | 'overdue' | 'done';
 
@@ -68,6 +68,19 @@ function nowText() {
 
 function createId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function formatDateOnly(date: Date) {
+  const y = date.getFullYear();
+  const m = `${date.getMonth() + 1}`.padStart(2, '0');
+  const d = `${date.getDate()}`.padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function dueAtFromToday(offsetDays: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return formatDateOnly(date);
 }
 
 // 初始 mock 数据（可替换为接口数据）
@@ -232,8 +245,8 @@ const mergeDemoCase = (list: PatientWithAnalysis[]) => {
 
 const initialReports: ReportEntry[] = [
   { id: 'R-001', patientId: 'p1', status: 'draft', type: 'screening', updatedAt: nowText(), qaNote: '缺少病灶大小' },
-  { id: 'R-002', patientId: 'p2', status: 'signed', type: 'screening', updatedAt: nowText(), qaNote: '通过' },
-  { id: 'R-003', patientId: 'p3', status: 'retake', type: 'screening', updatedAt: nowText(), qaNote: '体位不佳' },
+  { id: 'R-002', patientId: 'p2', status: 'finalized', type: 'screening', updatedAt: nowText(), qaNote: '通过' },
+  { id: 'R-003', patientId: 'p3', status: 'draft', type: 'screening', updatedAt: nowText(), qaNote: '退回重拍：体位不佳' },
 ];
 
 const initialReferrals: ReferralEntry[] = [
@@ -241,9 +254,9 @@ const initialReferrals: ReferralEntry[] = [
 ];
 
 const initialFollowups: FollowupEntry[] = [
-  { id: 'FU-001', patientId: 'p1', title: '2周电话随访', dueAt: '2025-01-12', status: 'pending' },
-  { id: 'FU-002', patientId: 'p1', title: '1个月痰培养回传', dueAt: '2025-02-02', status: 'overdue' },
-  { id: 'FU-003', patientId: 'p2', title: '3个月影像复查', dueAt: '2025-03-05', status: 'pending' },
+  { id: 'FU-001', patientId: 'p1', title: '2周电话随访', dueAt: dueAtFromToday(14), status: 'pending' },
+  { id: 'FU-002', patientId: 'p1', title: '1个月痰培养回传', dueAt: dueAtFromToday(-7), status: 'overdue' },
+  { id: 'FU-003', patientId: 'p2', title: '3个月影像复查', dueAt: dueAtFromToday(90), status: 'pending' },
 ];
 
 const initialAudit: AuditEntry[] = [
@@ -326,9 +339,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const existing = prev.find((r) => r.patientId === patientId);
         if (existing) {
           targetId = existing.id;
-          return prev.map((r) => (r.id === existing.id ? { ...r, status: 'retake', updatedAt: nowText() } : r));
+          return prev.map((r) =>
+            r.id === existing.id
+              ? { ...r, status: 'draft', qaNote: '退回重拍：影像需重拍', updatedAt: nowText() }
+              : r
+          );
         }
-        const created: ReportEntry = { id: createId('R'), patientId, status: 'retake', type: 'screening', updatedAt: nowText() };
+        const created: ReportEntry = {
+          id: createId('R'),
+          patientId,
+          status: 'draft',
+          type: 'screening',
+          qaNote: '退回重拍：影像需重拍',
+          updatedAt: nowText(),
+        };
         targetId = created.id;
         return [created, ...prev];
       });
@@ -343,8 +367,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setReports((prev) => {
         const existing = prev.find((r) => r.patientId === patientId);
         const updated: ReportEntry = existing
-          ? { ...existing, status: 'pending_sign', updatedAt: nowText() }
-          : { id: createId('R'), patientId, status: 'pending_sign', type: 'screening', updatedAt: nowText() };
+          ? { ...existing, status: 'finalized', qaNote: existing.qaNote || '待上报', updatedAt: nowText() }
+          : { id: createId('R'), patientId, status: 'finalized', type: 'screening', qaNote: '待上报', updatedAt: nowText() };
         reportId = updated.id;
         const others = prev.filter((r) => r.id !== updated.id);
         return [updated, ...others];
@@ -359,8 +383,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       };
       setReferrals((prev) => [referral, ...prev]);
 
-      const fu1: FollowupEntry = { id: createId('FU'), patientId, title: '2周电话随访', dueAt: '2025-01-12', status: 'pending' };
-      const fu2: FollowupEntry = { id: createId('FU'), patientId, title: '1个月痰培养回传', dueAt: '2025-02-02', status: 'pending' };
+      const fu1: FollowupEntry = {
+        id: createId('FU'),
+        patientId,
+        title: '2周电话随访',
+        dueAt: dueAtFromToday(14),
+        status: 'pending',
+      };
+      const fu2: FollowupEntry = {
+        id: createId('FU'),
+        patientId,
+        title: '1个月痰培养回传',
+        dueAt: dueAtFromToday(30),
+        status: 'pending',
+      };
       setFollowups((prev) => [fu1, fu2, ...prev]);
 
       appendAudit({ actor: 'rad_A', action: '确认阳性', target: reportId || patientId, detail: '生成转诊/随访' });

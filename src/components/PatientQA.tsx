@@ -3,7 +3,8 @@ import { Send, ShieldAlert, MessageCircle, Sparkles, Pause, FileText, Image as I
 import { uiStyles } from '../lib/theme';
 import { askDeepseek } from '../lib/deepseek';
 import { DigitalHumanAvatar } from './DigitalHuman';
-import { speakCN, stopSpeaking } from '../lib/voice';
+import { speakText, stopSpeaking } from '../lib/voice';
+import { useI18n } from '../lib/i18n';
 
 interface ChatItem {
   sender: 'user' | 'bot';
@@ -33,16 +34,20 @@ const quickQuestions = [
   '合并糖尿病或 HIV 时，结核管理有哪些特别注意？',
 ];
 
-const attachmentLabel = (kind: AttachmentKind) => {
-  if (kind === 'doc') return '文档';
-  if (kind === 'image') return '图片';
-  if (kind === 'audio') return '语音';
-  return '视频';
+const attachmentLabel = (kind: AttachmentKind, tr: (text: string) => string) => {
+  if (kind === 'doc') return tr('文档');
+  if (kind === 'image') return tr('图片');
+  if (kind === 'audio') return tr('语音');
+  return tr('视频');
 };
 
 export function PatientQA() {
+  const { locale, tr } = useI18n();
   const [messages, setMessages] = useState<ChatItem[]>([
-    { sender: 'bot', text: '你好，这里是广西医科大学 TB 科智能助手，提供科普与流程建议，不替代线下诊断。' },
+    {
+      sender: 'bot',
+      text: tr('你好，这里是广西医科大学 TB 科智能助手，提供科普与流程建议，不替代线下诊断。'),
+    },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -82,7 +87,7 @@ export function PatientQA() {
     if (!q && attachments.length === 0) return;
     const outgoing: ChatItem = {
       sender: 'user',
-      text: q || '已上传附件',
+      text: q || tr('已上传附件'),
       attachments: attachments.length ? attachments : undefined,
     };
 
@@ -90,15 +95,23 @@ export function PatientQA() {
     setInput('');
     setAttachments([]);
     setLoading(true);
-
-    const reply = await askDeepseek(q);
-    setMessages((prev) => [...prev, { sender: 'bot', text: reply }]);
-    speakCN(
-      reply,
-      () => setSpeaking(true),
-      () => setSpeaking(false)
-    );
-    setLoading(false);
+    try {
+      const reply = await askDeepseek(q, undefined, locale);
+      setMessages((prev) => [...prev, { sender: 'bot', text: reply }]);
+      speakText(
+        reply,
+        locale,
+        () => setSpeaking(true),
+        () => setSpeaking(false)
+      );
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'bot', text: tr('当前问答服务暂不可用，请稍后重试。') },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -107,11 +120,11 @@ export function PatientQA() {
         <div className="p-3 border-b border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <MessageCircle className="h-4 w-4 text-teal-400" />
-            智能问答
+            {tr('智能问答')}
           </div>
           <div className="flex items-center gap-2 text-[11px] text-gray-500">
             <ShieldAlert className="h-3 w-3 text-amber-400" />
-            仅供科普与流程建议，不替代医生诊断
+            {tr('仅供科普与流程建议，不替代医生诊断')}
           </div>
         </div>
 
@@ -133,7 +146,7 @@ export function PatientQA() {
                         key={file.id}
                         className="flex items-center gap-2 text-[11px] bg-gray-800 border border-gray-700 rounded-lg px-2 py-1"
                       >
-                        <span className="text-gray-300">{attachmentLabel(file.kind)}</span>
+                        <span className="text-gray-300">{attachmentLabel(file.kind, tr)}</span>
                         <span className="text-gray-400">{file.name}</span>
                         <span className="text-gray-500">{file.size}</span>
                       </div>
@@ -143,7 +156,7 @@ export function PatientQA() {
               </div>
             </div>
           ))}
-          {loading && <div className="text-xs text-gray-500">生成回答中...</div>}
+          {loading && <div className="text-xs text-gray-500">{tr('生成回答中...')}</div>}
         </div>
 
         <div className="p-3 border-t border-gray-700 space-y-2">
@@ -154,13 +167,13 @@ export function PatientQA() {
                   key={file.id}
                   className="flex items-center gap-2 text-[11px] bg-gray-800 border border-gray-700 rounded-lg px-2 py-1"
                 >
-                  <span className="text-gray-300">{attachmentLabel(file.kind)}</span>
+                  <span className="text-gray-300">{attachmentLabel(file.kind, tr)}</span>
                   <span className="text-gray-400">{file.name}</span>
                   <span className="text-gray-500">{file.size}</span>
                   <button
                     onClick={() => removeAttachment(file.id)}
                     className="text-gray-400 hover:text-gray-200"
-                    title="移除"
+                    title={tr('移除')}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -173,28 +186,28 @@ export function PatientQA() {
               <button
                 onClick={() => docInputRef.current?.click()}
                 className="p-2 rounded-full border border-gray-700 text-gray-300 hover:text-gray-100 hover:border-gray-600"
-                title="上传文档"
+                title={tr('上传文档')}
               >
                 <FileText className="h-4 w-4" />
               </button>
               <button
                 onClick={() => imageInputRef.current?.click()}
                 className="p-2 rounded-full border border-gray-700 text-gray-300 hover:text-gray-100 hover:border-gray-600"
-                title="上传图片"
+                title={tr('上传图片')}
               >
                 <ImageIcon className="h-4 w-4" />
               </button>
               <button
                 onClick={() => audioInputRef.current?.click()}
                 className="p-2 rounded-full border border-gray-700 text-gray-300 hover:text-gray-100 hover:border-gray-600"
-                title="上传语音"
+                title={tr('上传语音')}
               >
                 <Mic className="h-4 w-4" />
               </button>
               <button
                 onClick={() => videoInputRef.current?.click()}
                 className="p-2 rounded-full border border-gray-700 text-gray-300 hover:text-gray-100 hover:border-gray-600"
-                title="上传视频"
+                title={tr('上传视频')}
               >
                 <Video className="h-4 w-4" />
               </button>
@@ -202,7 +215,7 @@ export function PatientQA() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="输入问题，支持多种附件"
+              placeholder={tr('输入问题，支持多种附件')}
               className={uiStyles.input.textarea + ' min-h-[64px] flex-1 border-none bg-transparent'}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -220,7 +233,7 @@ export function PatientQA() {
               }
             >
               <Send className="h-4 w-4" />
-              发送
+              {tr('发送')}
             </button>
             <button
               onClick={() => {
@@ -230,7 +243,7 @@ export function PatientQA() {
               className={uiStyles.button.secondary + ' flex items-center gap-2 justify-center'}
             >
               <Pause className="h-4 w-4" />
-              停止朗读
+              {tr('停止朗读')}
             </button>
           </div>
 
@@ -273,14 +286,14 @@ export function PatientQA() {
         <div className="aurora-card glass-card-hover p-3">
           <DigitalHumanAvatar speaking={speaking} />
           <div className="text-xs text-gray-500 mt-2 text-center">
-            状态：{speaking ? '数字人正在朗读' : '待机'}
+            {tr('状态：')}{speaking ? tr('数字人正在朗读') : tr('待机')}
           </div>
         </div>
 
         <div className="aurora-card glass-card-hover p-3 space-y-3">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
             <Sparkles className="h-4 w-4 text-blue-400" />
-            快速提问
+            {tr('快速提问')}
           </div>
           <div className="space-y-2">
             {quickQuestions.map((q) => (
@@ -289,12 +302,12 @@ export function PatientQA() {
                 onClick={() => send(q)}
                 className="w-full text-left px-3 py-2 rounded bg-gray-900 hover:bg-gray-800 text-sm text-gray-200 border border-gray-700"
               >
-                {q}
+                {tr(q)}
               </button>
             ))}
           </div>
           <div className="text-xs text-gray-500 border border-gray-700 rounded p-2">
-            提示：若出现高热、咳血、呼吸困难等急症，请立即线下就医
+            {tr('提示：若出现高热、咳血、呼吸困难等急症，请立即线下就医')}
           </div>
         </div>
       </div>

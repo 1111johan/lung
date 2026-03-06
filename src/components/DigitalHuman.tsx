@@ -4,10 +4,11 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
-import { speakCN, stopSpeaking } from '../lib/voice';
+import { speakText, stopSpeaking } from '../lib/voice';
 import { askDeepseek } from '../lib/deepseek';
 import { uiStyles } from '../lib/theme';
 import { MessageCircle, Mic, Pause } from 'lucide-react';
+import { useI18n } from '../lib/i18n';
 
 useGLTF.preload('/models/doctor.glb');
 
@@ -109,8 +110,9 @@ export function DoctorModel({ speaking }: { speaking: boolean }) {
 }
 
 export function DigitalHumanQA() {
+  const { locale, tr } = useI18n();
   const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('你好，我是数字人迎宾医生，准备为你解答。');
+  const [answer, setAnswer] = useState(tr('你好，我是数字人迎宾医生，准备为你解答。'));
   const [speaking, setSpeaking] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -119,19 +121,22 @@ export function DigitalHumanQA() {
     if (!q) return;
     setLoading(true);
     setAnswer('');
-
-    const reply = await askDeepseek(q);
-
-    setAnswer(reply);
-    setLoading(false);
-
-    speakCN(
-      reply,
-      () => setSpeaking(true),
-      () => {
-        setSpeaking(false);
-      }
-    );
+    try {
+      const reply = await askDeepseek(q, undefined, locale);
+      setAnswer(reply);
+      speakText(
+        reply,
+        locale,
+        () => setSpeaking(true),
+        () => {
+          setSpeaking(false);
+        }
+      );
+    } catch {
+      setAnswer(tr('当前问答服务暂不可用，请稍后重试。'));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -139,9 +144,9 @@ export function DigitalHumanQA() {
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2 text-sm text-gray-300">
           <MessageCircle className="h-4 w-4 text-teal-400" />
-          数字人问答
+          {tr('数字人问答')}
           <span className="text-xs text-gray-500">
-            （模型无嘴部控制器，使用点头/呼吸表示说话）
+            {tr('（模型无嘴部控制器，使用点头/呼吸表示说话）')}
           </span>
         </div>
 
@@ -150,7 +155,7 @@ export function DigitalHumanQA() {
             className={uiStyles.input.textarea + ' min-h-[120px]'}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="请描述你的问题或症状..."
+            placeholder={tr('请描述你的问题或症状...')}
           />
           <div className="flex gap-2">
             <button
@@ -162,7 +167,7 @@ export function DigitalHumanQA() {
               }
             >
               <Mic className="h-4 w-4" />
-              提问并朗读
+              {tr('提问并朗读')}
             </button>
             <button
               onClick={() => {
@@ -172,15 +177,15 @@ export function DigitalHumanQA() {
               className={uiStyles.button.secondary + ' flex items-center gap-2'}
             >
               <Pause className="h-4 w-4" />
-              停止语音
+              {tr('停止语音')}
             </button>
           </div>
         </div>
 
         <div className={uiStyles.card.default + ' flex-1 space-y-2'}>
-          <div className="text-xs text-gray-400">回答</div>
+          <div className="text-xs text-gray-400">{tr('回答')}</div>
           <div className="whitespace-pre-wrap text-sm leading-relaxed">
-            {loading ? '正在生成...' : answer || '暂无回答'}
+            {loading ? tr('正在生成...') : answer || tr('暂无回答')}
           </div>
         </div>
       </div>
@@ -188,10 +193,10 @@ export function DigitalHumanQA() {
       <div className="flex flex-col items-center gap-2">
         <DigitalHumanAvatar speaking={speaking} />
         <div className="text-xs text-gray-500">
-          状态：{speaking ? '正在朗读' : '待机'}
+          {tr('状态：')}{speaking ? tr('正在朗读') : tr('待机')}
         </div>
         <div className="text-[11px] text-gray-500 text-center">
-          提示：本模型无口型控制，已用点头 + 呼吸模拟“说话”。
+          {tr('提示：本模型无口型控制，已用点头 + 呼吸模拟“说话”。')}
         </div>
       </div>
     </div>
@@ -199,12 +204,13 @@ export function DigitalHumanQA() {
 }
 
 export function DigitalHumanAvatar({ speaking }: { speaking: boolean }) {
+  const { tr } = useI18n();
   return (
     <div className="w-full bg-gray-800 border border-gray-700 rounded-lg">
       <Suspense
         fallback={
           <div className="h-[520px] flex items-center justify-center text-gray-400">
-            模型加载中...
+            {tr('模型加载中...')}
           </div>
         }
       >
