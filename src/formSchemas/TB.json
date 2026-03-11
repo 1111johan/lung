@@ -1,0 +1,358 @@
+﻿{
+  "formId": "tb_health_profile_simple",
+  "formTitle": "个人健康档案表单",
+  "submitText": "提交档案",
+  "sections": [
+    {
+      "title": "基本信息",
+      "fields": [
+        {
+          "type": "input",
+          "label": "姓名",
+          "name": "name",
+          "required": true,
+          "placeholder": "请输入姓名"
+        },
+        {
+          "type": "radio",
+          "label": "性别",
+          "name": "gender",
+          "required": true,
+          "options": [
+            { "label": "男", "value": "male" },
+            { "label": "女", "value": "female" }
+          ]
+        },
+        {
+          "type": "number",
+          "label": "年龄",
+          "name": "age",
+          "required": true,
+          "placeholder": "请输入年龄",
+          "min": 0,
+          "max": 120
+        },
+        {
+          "type": "input",
+          "label": "手机号",
+          "name": "phone",
+          "required": true,
+          "placeholder": "请输入手机号"
+        },
+        {
+          "type": "input",
+          "label": "身份证号",
+          "name": "idNumber",
+          "required": false,
+          "placeholder": "请输入身份证号（可选）"
+        },
+        {
+          "type": "textarea",
+          "label": "居住地址",
+          "name": "address",
+          "required": false,
+          "placeholder": "请输入居住地址"
+        }
+      ]
+    },
+    {
+      "title": "基础情况",
+      "fields": [
+        {
+          "type": "number",
+          "label": "身高（cm）",
+          "name": "height",
+          "required": false,
+          "placeholder": "请输入身高"
+        },
+        {
+          "type": "number",
+          "label": "体重（kg）",
+          "name": "weight",
+          "required": false,
+          "placeholder": "请输入体重"
+        },
+        {
+          "type": "input",
+          "label": "职业",
+          "name": "occupation",
+          "required": false,
+          "placeholder": "请输入职业"
+        },
+        {
+          "type": "radio",
+          "label": "是否吸烟",
+          "name": "smoking",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否饮酒",
+          "name": "drinking",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "当前症状",
+      "fields": [
+        {
+          "type": "radio",
+          "label": "是否咳嗽",
+          "name": "symptom_cough",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "select",
+          "label": "咳嗽持续时间",
+          "name": "cough_duration",
+          "required": false,
+          "options": [
+            { "label": "少于1周", "value": "lt_1_week" },
+            { "label": "1–2周", "value": "1_2_weeks" },
+            { "label": "2周以上", "value": "gt_2_weeks" }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否咳痰",
+          "name": "symptom_sputum",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否咯血",
+          "name": "symptom_hemoptysis",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否发热",
+          "name": "symptom_fever",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否盗汗",
+          "name": "symptom_night_sweats",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否胸痛",
+          "name": "symptom_chest_pain",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否体重下降",
+          "name": "symptom_weight_loss",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "textarea",
+          "label": "其他不适",
+          "name": "other_symptoms",
+          "required": false,
+          "placeholder": "请输入其他不适"
+        }
+      ]
+    },
+    {
+      "title": "流行病学与高危因素",
+      "fields": [
+        {
+          "type": "select",
+          "label": "是否接触过肺结核患者",
+          "name": "tb_contact_history",
+          "required": true,
+          "options": [
+            { "label": "是", "value": "yes" },
+            { "label": "否", "value": "no" },
+            { "label": "不清楚", "value": "unknown" }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否有既往肺结核病史",
+          "name": "past_tb_history",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "家中是否有人患过结核",
+          "name": "family_tb_history",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否长期熬夜/营养较差",
+          "name": "poor_lifestyle",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否有慢性疾病",
+          "name": "chronic_disease",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否免疫力低下",
+          "name": "immunosuppressed",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "检查情况",
+      "fields": [
+        {
+          "type": "radio",
+          "label": "是否做过胸部X线/CT",
+          "name": "has_chest_imaging",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "select",
+          "label": "影像检查结果",
+          "name": "chest_imaging_result",
+          "required": false,
+          "options": [
+            { "label": "正常", "value": "normal" },
+            { "label": "异常", "value": "abnormal" },
+            { "label": "不清楚", "value": "unknown" }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否做过痰检",
+          "name": "has_sputum_test",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "radio",
+          "label": "是否做过结核感染检测（PPD/IGRA）",
+          "name": "has_tb_test",
+          "required": true,
+          "options": [
+            { "label": "是", "value": true },
+            { "label": "否", "value": false }
+          ]
+        },
+        {
+          "type": "select",
+          "label": "检测结果",
+          "name": "tb_test_result",
+          "required": false,
+          "options": [
+            { "label": "阳性", "value": "positive" },
+            { "label": "阴性", "value": "negative" },
+            { "label": "不清楚", "value": "unknown" }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "补充信息",
+      "fields": [
+        {
+          "type": "textarea",
+          "label": "既往手术史",
+          "name": "surgery_history",
+          "required": false,
+          "placeholder": "请输入既往手术史"
+        },
+        {
+          "type": "textarea",
+          "label": "过敏史",
+          "name": "allergy_history",
+          "required": false,
+          "placeholder": "请输入过敏史"
+        },
+        {
+          "type": "textarea",
+          "label": "正在服用的药物",
+          "name": "current_medications",
+          "required": false,
+          "placeholder": "请输入正在服用的药物"
+        }
+      ]
+    },
+    {
+      "title": "知情确认",
+      "fields": [
+        {
+          "type": "checkbox",
+          "label": "我确认以上信息由本人填写，内容基本真实",
+          "name": "consent_confirm",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

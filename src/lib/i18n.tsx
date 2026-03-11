@@ -163,6 +163,7 @@ const en: Record<string, string> = {
   '停止朗读': 'Stop reading',
   '数字人正在朗读': 'Digital human is reading',
   '快速提问': 'Quick questions',
+  '追问建议': 'Follow-up suggestions',
   '提示：若出现高热、咳血、呼吸困难等急症，请立即线下就医':
     'Tip: if high fever, hemoptysis, or dyspnea occurs, seek in-person care immediately.',
 

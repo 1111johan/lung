@@ -1,15 +1,36 @@
 ﻿import { useRef, useState } from 'react';
-import { Send, ShieldAlert, MessageCircle, Sparkles, Pause, FileText, Image as ImageIcon, Mic, Video, X } from 'lucide-react';
+import {
+  Send,
+  ShieldAlert,
+  MessageCircle,
+  Sparkles,
+  Pause,
+  FileText,
+  Image as ImageIcon,
+  Mic,
+  Video,
+  X,
+  MapPin,
+} from 'lucide-react';
 import { uiStyles } from '../lib/theme';
 import { askDeepseek } from '../lib/deepseek';
 import { DigitalHumanAvatar } from './DigitalHuman';
 import { speakText, stopSpeaking } from '../lib/voice';
-import { useI18n } from '../lib/i18n';
+import { useI18n, type AppLocale } from '../lib/i18n';
+import { fetchNearbyHospitals, getAmapConfigStatus, type GeoPoint, type NearbyHospital } from '../lib/amap';
+import { getCurrentPositionWithBrowserFallback } from '../lib/location';
+import { saveNearbyHospitalsPayload, type NearbyHospitalsMapPayload } from '../lib/nearbyHospitalsState';
 
 interface ChatItem {
   sender: 'user' | 'bot';
   text: string;
   attachments?: Attachment[];
+  followUps?: string[];
+  showHospitalMapButton?: boolean;
+}
+
+interface PatientQAProps {
+  onOpenHospitalMap?: (payload: NearbyHospitalsMapPayload) => void;
 }
 
 type AttachmentKind = 'doc' | 'video' | 'audio' | 'image';
@@ -41,18 +62,290 @@ const attachmentLabel = (kind: AttachmentKind, tr: (text: string) => string) => 
   return tr('视频');
 };
 
-export function PatientQA() {
+const hasAnyKeyword = (text: string, keywords: string[]) => keywords.some((keyword) => text.includes(keyword));
+
+const hospitalIntentKeywords = [
+  '医院',
+  '定点',
+  '附近',
+  '就近',
+  '结核病医院',
+  '结核病防治所',
+  '传染病医院',
+  '胸科医院',
+  'hospital',
+  'clinic',
+  'nearby hospital',
+  'tb hospital',
+];
+
+const followupTemplates: Record<
+  'zh' | 'en',
+  {
+    general: string[];
+    symptom: string[];
+    test: string[];
+    treatment: string[];
+    prevention: string[];
+    emergency: string[];
+  }
+> = {
+  zh: {
+    general: [
+      '如果我现在去医院，应该优先做哪两项检查？',
+      '我这种情况建议多久复查一次？',
+      '有哪些情况出现时需要立即线下就医？',
+    ],
+    symptom: [
+      '这些症状里，哪个最提示结核风险升高？',
+      '症状持续多久需要立刻做影像检查？',
+      '如果症状减轻了，还需要继续复查吗？',
+    ],
+    test: [
+      'IGRA、PPD、痰检和胸片，下一步检查顺序怎么安排？',
+      '检查结果互相矛盾时该怎么判断？',
+      '如果首次检查阴性，还要不要做复检？',
+    ],
+    treatment: [
+      '如果确诊结核，标准治疗周期通常多长？',
+      '漏服药后该如何补救，风险大吗？',
+      '治疗期间最关键的随访指标是什么？',
+    ],
+    prevention: [
+      '家人或同住者现在该怎么做筛查？',
+      '在家隔离和日常防护要点有哪些？',
+      '什么时候可以考虑解除隔离？',
+    ],
+    emergency: [
+      '出现咳血或呼吸困难时，第一步该怎么处理？',
+      '哪些危险信号提示需要急诊？',
+      '去急诊前需要准备哪些既往检查资料？',
+    ],
+  },
+  en: {
+    general: [
+      'If I visit a clinic now, which two tests should be prioritized?',
+      'How often should I recheck in my case?',
+      'Which warning signs mean I should seek in-person care immediately?',
+    ],
+    symptom: [
+      'Which of these symptoms most strongly suggests higher TB risk?',
+      'How long should symptoms persist before immediate imaging is needed?',
+      'If symptoms improve, do I still need follow-up tests?',
+    ],
+    test: [
+      'How should IGRA, PPD, sputum, and chest imaging be sequenced next?',
+      'How should conflicting test results be interpreted?',
+      'If the first test is negative, should repeat testing still be done?',
+    ],
+    treatment: [
+      'If TB is confirmed, what is the typical treatment duration?',
+      'If a dose is missed, what is the best recovery plan and risk?',
+      'What follow-up indicators matter most during treatment?',
+    ],
+    prevention: [
+      'What screening steps should household contacts take now?',
+      'What are the key home isolation and infection-control points?',
+      'When can isolation usually be lifted safely?',
+    ],
+    emergency: [
+      'If hemoptysis or breathing difficulty occurs, what should be done first?',
+      'Which danger signs suggest emergency care is needed now?',
+      'What prior records should I bring before going to emergency care?',
+    ],
+  },
+};
+
+function buildFollowupQuestions(answer: string, previousQuestion: string, locale: AppLocale) {
+  const lang: 'zh' | 'en' = locale === 'zh' ? 'zh' : 'en';
+  const templates = followupTemplates[lang];
+  const merged = `${answer} ${previousQuestion}`.toLowerCase();
+
+  const pool: string[] = [];
+  if (
+    hasAnyKeyword(merged, ['咳', '痰', '发热', '盗汗', '胸痛', '气促', 'cough', 'sputum', 'fever', 'night sweat', 'chest pain'])
+  ) {
+    pool.push(...templates.symptom);
+  }
+  if (hasAnyKeyword(merged, ['igra', 'ppd', '痰检', '胸片', 'ct', 'x-ray', 'sputum', 'imaging', '检查', '检验'])) {
+    pool.push(...templates.test);
+  }
+  if (hasAnyKeyword(merged, ['治疗', '用药', '服药', '耐药', 'mdr', 'xdr', 'treatment', 'medication', 'drug resistance'])) {
+    pool.push(...templates.treatment);
+  }
+  if (hasAnyKeyword(merged, ['密接', '家人', '同住', '隔离', '接触', 'contact', 'household', 'isolation', 'prevention'])) {
+    pool.push(...templates.prevention);
+  }
+  if (hasAnyKeyword(merged, ['咳血', '呼吸困难', '高热', '急诊', 'hemoptysis', 'dyspnea', 'emergency', 'severe'])) {
+    pool.push(...templates.emergency);
+  }
+  pool.push(...templates.general);
+
+  return Array.from(new Set(pool.filter((item) => item.trim() && item.trim() !== previousQuestion.trim()))).slice(0, 3);
+}
+
+function isHospitalIntent(text: string) {
+  const normalized = text.toLowerCase();
+  return hospitalIntentKeywords.some((keyword) => normalized.includes(keyword.toLowerCase()));
+}
+
+function formatDistance(distanceMeter: number, locale: AppLocale) {
+  if (distanceMeter < 1000) return `${Math.max(1, Math.round(distanceMeter))}m`;
+  const km = (distanceMeter / 1000).toFixed(1);
+  return locale === 'zh' ? `${km}公里` : `${km}km`;
+}
+
+function buildHospitalSuccessReply(point: GeoPoint, hospitals: NearbyHospital[], locale: AppLocale) {
+  if (locale === 'zh') {
+    const topHospitals = hospitals.slice(0, 5);
+    const listText = topHospitals
+      .map((hospital, index) => {
+        return [
+          `${index + 1}. ${hospital.name}（${formatDistance(hospital.distanceMeter, locale)}）`,
+          `地址：${hospital.address || '未知地址'}`,
+          `电话：${hospital.tel || '暂无'}`,
+        ].join('\n');
+      })
+      .join('\n');
+
+    return [
+      '已根据你当前位置推荐附近医院（优先结核/呼吸相关）：',
+      `当前位置：${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
+      listText || '当前范围内未查询到医院。',
+      '点击下方“进入定点推送页”可查看地图点位并一键导航。',
+    ].join('\n');
+  }
+
+  const topHospitals = hospitals.slice(0, 5);
+  const listText = topHospitals
+    .map((hospital, index) => {
+      return [
+        `${index + 1}. ${hospital.name} (${formatDistance(hospital.distanceMeter, locale)})`,
+        `Address: ${hospital.address || 'Unknown address'}`,
+        `Phone: ${hospital.tel || 'N/A'}`,
+      ].join('\n');
+    })
+    .join('\n');
+
+  return [
+    'Nearby designated hospitals have been recommended based on your current location:',
+    `Current location: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
+    listText || 'No hospitals were found in the current range.',
+    'Use "Open designated map page" below for map markers and navigation.',
+  ].join('\n');
+}
+
+function buildHospitalFailureReply(error: unknown, locale: AppLocale) {
+  const message = error instanceof Error ? error.message : String(error || '');
+
+  if (locale === 'zh') {
+    if (message.includes('MISSING_AMAP_WEB_KEY') || message.includes('MISSING_AMAP_JS_KEY') || message.includes('MISSING_AMAP_KEYS')) {
+      return '医院推荐失败：未配置高德 API Key。请先在环境变量配置后重试。';
+    }
+    if (message.includes('GEOLOCATION_INSECURE_CONTEXT')) {
+      return '医院推荐失败：当前页面不是安全上下文。请通过 HTTPS 或 localhost 访问并重试。';
+    }
+    if (message.includes('GEOLOCATION_DENIED')) {
+      return '医院推荐失败：定位权限被拒绝。请在浏览器地址栏权限设置中允许位置访问后重试。';
+    }
+    if (message.includes('GEOLOCATION_TIMEOUT')) {
+      return '医院推荐失败：定位超时。请在网络稳定后重试。';
+    }
+    if (message.includes('GEOLOCATION_UNAVAILABLE') || message.includes('GEOLOCATION_UNKNOWN')) {
+      return '医院推荐失败：无法获取设备定位，请检查系统定位服务是否开启。';
+    }
+    if (message.includes('10001') || message.includes('INVALID_USER_KEY')) {
+      return '医院推荐失败：高德 Key 无效或权限不足，请检查 Key 类型与绑定配置。';
+    }
+    if (message.includes('AMAP_HTTP_') || message.includes('Failed to fetch') || message.includes('NetworkError')) {
+      return '医院推荐失败：高德服务网络访问异常，请检查网络/代理后重试。';
+    }
+    return '医院推荐失败，请稍后重试。你仍可点击下方按钮进入定点推送页手动定位查询。';
+  }
+
+  if (message.includes('MISSING_AMAP_WEB_KEY') || message.includes('MISSING_AMAP_JS_KEY') || message.includes('MISSING_AMAP_KEYS')) {
+    return 'Hospital recommendation failed: missing Amap API key configuration.';
+  }
+  if (message.includes('GEOLOCATION_INSECURE_CONTEXT')) {
+    return 'Hospital recommendation failed: page is not in a secure context. Use HTTPS or localhost.';
+  }
+  if (message.includes('GEOLOCATION_DENIED')) {
+    return 'Hospital recommendation failed: location permission denied. Allow location access and retry.';
+  }
+  if (message.includes('GEOLOCATION_TIMEOUT')) {
+    return 'Hospital recommendation failed: location timeout. Please retry.';
+  }
+  if (message.includes('GEOLOCATION_UNAVAILABLE') || message.includes('GEOLOCATION_UNKNOWN')) {
+    return 'Hospital recommendation failed: location is unavailable on this device/browser.';
+  }
+  if (message.includes('10001') || message.includes('INVALID_USER_KEY')) {
+    return 'Hospital recommendation failed: invalid Amap key or insufficient permissions.';
+  }
+  if (message.includes('AMAP_HTTP_') || message.includes('Failed to fetch') || message.includes('NetworkError')) {
+    return 'Hospital recommendation failed: unable to reach Amap service. Check network/proxy.';
+  }
+  return 'Hospital recommendation failed. You can still open the designated map page below.';
+}
+
+async function getHospitalRecommendation(locale: AppLocale) {
+  const config = getAmapConfigStatus();
+  if (!config.configured) {
+    throw new Error(config.reason || 'MISSING_AMAP_KEYS');
+  }
+
+  const point = await getCurrentPositionWithBrowserFallback();
+  const hospitals = await fetchNearbyHospitals(point, { radiusMeter: 8000, pageSize: 8 });
+
+  const payload: NearbyHospitalsMapPayload = {
+    point,
+    hospitals,
+    source: 'qa',
+    updatedAt: new Date().toISOString(),
+  };
+
+  saveNearbyHospitalsPayload(payload);
+
+  if (hospitals.length === 0) {
+    if (locale === 'zh') {
+      return {
+        payload,
+        reply: [
+          '已完成定位，但当前范围内未检索到可展示医院。',
+          `当前位置：${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
+          '可点击下方“进入定点推送页”扩大范围继续查询。',
+        ].join('\n'),
+      };
+    }
+    return {
+      payload,
+      reply: [
+        'Location acquired, but no hospitals were found in the current range.',
+        `Current location: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
+        'Open the designated map page below to expand the query range.',
+      ].join('\n'),
+    };
+  }
+
+  return {
+    payload,
+    reply: buildHospitalSuccessReply(point, hospitals, locale),
+  };
+}
+
+export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
   const { locale, tr } = useI18n();
   const [messages, setMessages] = useState<ChatItem[]>([
     {
       sender: 'bot',
       text: tr('你好，这里是广西医科大学 TB 科智能助手，提供科普与流程建议，不替代线下诊断。'),
+      followUps: buildFollowupQuestions('', '', locale),
     },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [latestHospitalPayload, setLatestHospitalPayload] = useState<NearbyHospitalsMapPayload | null>(null);
 
   const docInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -82,9 +375,31 @@ export function PatientQA() {
     setAttachments((prev) => prev.filter((item) => item.id !== id));
   };
 
+  const openHospitalMap = () => {
+    const payload: NearbyHospitalsMapPayload =
+      latestHospitalPayload ||
+      {
+        point: null,
+        hospitals: [],
+        source: 'qa',
+        updatedAt: new Date().toISOString(),
+      };
+
+    saveNearbyHospitalsPayload(payload);
+
+    if (onOpenHospitalMap) {
+      onOpenHospitalMap(payload);
+      return;
+    }
+    window.location.assign('/nearby-hospitals/map');
+  };
+
   const send = async (text: string) => {
+    if (loading) return;
+
     const q = text.trim();
     if (!q && attachments.length === 0) return;
+
     const outgoing: ChatItem = {
       sender: 'user',
       text: q || tr('已上传附件'),
@@ -95,9 +410,34 @@ export function PatientQA() {
     setInput('');
     setAttachments([]);
     setLoading(true);
+
     try {
-      const reply = await askDeepseek(q, undefined, locale);
-      setMessages((prev) => [...prev, { sender: 'bot', text: reply }]);
+      const isHospitalQuery = isHospitalIntent(q);
+      let reply = '';
+      let showHospitalMapButton = false;
+
+      if (isHospitalQuery) {
+        showHospitalMapButton = true;
+        try {
+          const recommendation = await getHospitalRecommendation(locale);
+          reply = recommendation.reply;
+          setLatestHospitalPayload(recommendation.payload);
+        } catch (error) {
+          reply = buildHospitalFailureReply(error, locale);
+        }
+      } else {
+        reply = await askDeepseek(q, undefined, locale);
+      }
+
+      setMessages((prev) => {
+        const botMessage: ChatItem = {
+          sender: 'bot',
+          text: reply,
+          followUps: buildFollowupQuestions(reply, q, locale),
+          showHospitalMapButton,
+        };
+        return [...prev, botMessage];
+      });
       speakText(
         reply,
         locale,
@@ -105,9 +445,10 @@ export function PatientQA() {
         () => setSpeaking(false)
       );
     } catch {
+      const fallback = tr('当前问答服务暂不可用，请稍后重试。');
       setMessages((prev) => [
         ...prev,
-        { sender: 'bot', text: tr('当前问答服务暂不可用，请稍后重试。') },
+        { sender: 'bot', text: fallback, followUps: buildFollowupQuestions(fallback, q, locale) },
       ]);
     } finally {
       setLoading(false);
@@ -115,7 +456,7 @@ export function PatientQA() {
   };
 
   return (
-    <div className="flex-1 flex gap-4 p-4 bg-[rgb(var(--bg))] overflow-hidden">
+    <div className="flex-1 min-h-0 h-full flex gap-4 p-4 bg-[rgb(var(--bg))] overflow-hidden">
       <div className="flex-1 min-w-0 aurora-card glass-card-hover flex flex-col">
         <div className="p-3 border-b border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-2 text-gray-200 text-sm">
@@ -128,17 +469,17 @@ export function PatientQA() {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 p-4 space-y-4 overflow-y-auto">
+        <div className="flex-1 min-h-0 p-4 space-y-4 overflow-y-auto overflow-x-hidden">
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm whitespace-pre-wrap ${
+                className={`max-w-[80%] min-w-0 px-4 py-3 rounded-2xl text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${
                   msg.sender === 'user'
                     ? 'bg-teal-900 text-teal-50 border border-teal-600'
                     : 'bg-gray-900 text-gray-200 border border-gray-700'
                 }`}
               >
-                <div>{msg.text}</div>
+                <div className="break-words [overflow-wrap:anywhere]">{msg.text}</div>
                 {msg.attachments && msg.attachments.length > 0 && (
                   <div className="mt-2 space-y-1">
                     {msg.attachments.map((file) => (
@@ -151,6 +492,40 @@ export function PatientQA() {
                         <span className="text-gray-500">{file.size}</span>
                       </div>
                     ))}
+                  </div>
+                )}
+                {msg.sender === 'bot' && msg.showHospitalMapButton && (
+                  <div className="mt-3 pt-2 border-t border-gray-700/80 space-y-2">
+                    <div className="text-[11px] text-gray-400 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {locale === 'zh' ? '点击按钮跳转定点推送页查看地图点位并导航' : 'Open the designated map page for markers and navigation'}
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        className="rounded border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-2 py-1 text-[11px] text-gray-300 hover:bg-[rgb(var(--bg))]"
+                        onClick={openHospitalMap}
+                      >
+                        {locale === 'zh' ? '进入定点推送页' : 'Open designated map page'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {msg.sender === 'bot' && msg.followUps && msg.followUps.length > 0 && (
+                  <div className="qa-followup-wrap mt-3 pt-2 border-t border-gray-700/80">
+                    <div className="qa-followup-title text-[11px] mb-2">{tr('追问建议')}</div>
+                    <div className="flex flex-wrap gap-2">
+                      {msg.followUps.map((question) => (
+                        <button
+                          key={`${idx}-${question}`}
+                          onClick={() => send(question)}
+                          disabled={loading}
+                          className="qa-followup-btn text-left text-[12px] px-2 py-1.5 rounded disabled:opacity-50 break-words [overflow-wrap:anywhere]"
+                        >
+                          {question}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -220,12 +595,14 @@ export function PatientQA() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                   e.preventDefault();
-                  send(input);
+                  void send(input);
                 }
               }}
             />
             <button
-              onClick={() => send(input)}
+              onClick={() => {
+                void send(input);
+              }}
               disabled={loading}
               className={
                 uiStyles.button.primary +
@@ -286,7 +663,8 @@ export function PatientQA() {
         <div className="aurora-card glass-card-hover p-3">
           <DigitalHumanAvatar speaking={speaking} />
           <div className="text-xs text-gray-500 mt-2 text-center">
-            {tr('状态：')}{speaking ? tr('数字人正在朗读') : tr('待机')}
+            {tr('状态：')}
+            {speaking ? tr('数字人正在朗读') : tr('待机')}
           </div>
         </div>
 
@@ -299,7 +677,9 @@ export function PatientQA() {
             {quickQuestions.map((q) => (
               <button
                 key={q}
-                onClick={() => send(q)}
+                onClick={() => {
+                  void send(q);
+                }}
                 className="w-full text-left px-3 py-2 rounded bg-gray-900 hover:bg-gray-800 text-sm text-gray-200 border border-gray-700"
               >
                 {tr(q)}

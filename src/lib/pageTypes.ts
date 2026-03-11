@@ -1,6 +1,7 @@
 export type PageId =
   | 'enroll'
   | 'qa'
+  | 'hospitalMap'
   | 'dashboard'
   | 'workstation'
   | 'reports'
@@ -8,4 +9,3 @@ export type PageId =
   | 'followup'
   | 'research'
   | 'audit';
-

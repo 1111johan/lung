@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, useEffect } from 'react';
+﻿import { useMemo, useState, useEffect, useRef } from 'react';
 import type { JSX } from 'react';
 import {
   Activity,
@@ -8,6 +8,7 @@ import {
   FileText,
   Home,
   Layers,
+  MapPin,
   Shield,
   Stethoscope,
   Users,
@@ -21,12 +22,18 @@ import { uiStyles, getRiskStyles } from './lib/theme';
 import { DataProvider, useDataContext } from './lib/dataContext';
 import { PatientOnboarding } from './components/PatientOnboarding';
 import { PatientQA } from './components/PatientQA';
+import { NearbyHospitalsCard } from './components/NearbyHospitalsCard';
+import { NearbyHospitalsMapPage } from './components/NearbyHospitalsMapPage';
+import { saveNearbyHospitalsPayload, type NearbyHospitalsMapPayload } from './lib/nearbyHospitalsState';
 import type { PageId } from './lib/pageTypes';
 import { useI18n } from './lib/i18n';
+
+const HOSPITAL_MAP_PATH = '/nearby-hospitals/map';
 
 const navItems: { id: PageId; label: string; icon: JSX.Element }[] = [
   { id: 'enroll', label: '个人健康档案', icon: <ClipboardList className="h-4 w-4" /> },
   { id: 'qa', label: '智能问答', icon: <ClipboardList className="h-4 w-4 rotate-90" /> },
+  { id: 'hospitalMap', label: '定点医院地图', icon: <MapPin className="h-4 w-4" /> },
   { id: 'dashboard', label: '结核病风险自测', icon: <Home className="h-4 w-4" /> },
   { id: 'workstation', label: '筛查工作台', icon: <Layers className="h-4 w-4" /> },
   { id: 'reports', label: '报告中心', icon: <FileText className="h-4 w-4" /> },
@@ -36,7 +43,13 @@ const navItems: { id: PageId; label: string; icon: JSX.Element }[] = [
   { id: 'audit', label: '系统与审计', icon: <Shield className="h-4 w-4" /> },
 ];
 
-function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Record<string, string>) => void }) {
+function DashboardPage({
+  onNavigate,
+  onOpenHospitalMap,
+}: {
+  onNavigate: (page: PageId, filter?: Record<string, string>) => void;
+  onOpenHospitalMap: () => void;
+}) {
   const { tr } = useI18n();
   const { patients, followups, reports } = useDataContext();
   const highRisk = patients.filter((p) => p.risk_level === 'high').length;
@@ -213,6 +226,10 @@ function DashboardPage({ onNavigate }: { onNavigate: (page: PageId, filter?: Rec
             <div className="text-[11px] text-gray-500 mt-1">{tr('更新于')} {formatDate(new Date().toISOString())}</div>
           </button>
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-3">
+        <NearbyHospitalsCard onOpenMap={onOpenHospitalMap} />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -648,10 +665,55 @@ function WorkstationPage({
 
 function App() {
   const { tr } = useI18n();
-  const [activePage, setActivePage] = useState<PageId>('enroll');
+  const [activePage, setActivePage] = useState<PageId>(() => {
+    if (typeof window !== 'undefined' && window.location.pathname === HOSPITAL_MAP_PATH) {
+      return 'hospitalMap';
+    }
+    return 'enroll';
+  });
   const [selectedPatient, setSelectedPatient] = useState<PatientWithAnalysis | null>(null);
   const [selectedImage, setSelectedImage] = useState<MedicalImage | null>(null);
   const [selectedAnalysis, setSelectedAnalysis] = useState<AIAnalysis | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const openHospitalMap = (payload?: NearbyHospitalsMapPayload) => {
+    if (payload) {
+      saveNearbyHospitalsPayload(payload);
+    }
+    setActivePage('hospitalMap');
+  };
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if (contentRef.current) {
+      contentRef.current.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  }, [activePage]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPopState = () => {
+      if (window.location.pathname === HOSPITAL_MAP_PATH) {
+        setActivePage('hospitalMap');
+        return;
+      }
+      setActivePage((prev) => (prev === 'hospitalMap' ? 'enroll' : prev));
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const atMapPath = window.location.pathname === HOSPITAL_MAP_PATH;
+    if (activePage === 'hospitalMap' && !atMapPath) {
+      window.history.pushState({}, '', HOSPITAL_MAP_PATH);
+      return;
+    }
+    if (activePage !== 'hospitalMap' && atMapPath) {
+      window.history.pushState({}, '', '/');
+    }
+  }, [activePage]);
 
   const handleSelectPatient = (patient: PatientWithAnalysis | null) => {
     if (!patient) {
@@ -677,9 +739,16 @@ function App() {
       case 'enroll':
         return <PatientOnboarding />;
       case 'qa':
-        return <PatientQA />;
+        return <PatientQA onOpenHospitalMap={openHospitalMap} />;
+      case 'hospitalMap':
+        return <NearbyHospitalsMapPage onBack={() => setActivePage('dashboard')} />;
       case 'dashboard':
-        return <DashboardPage onNavigate={(page, _filter) => setActivePage(page)} />;
+        return (
+          <DashboardPage
+            onNavigate={(page, _filter) => setActivePage(page)}
+            onOpenHospitalMap={() => openHospitalMap()}
+          />
+        );
       case 'reports':
         return <ReportsPage />;
       case 'referrals':
@@ -705,7 +774,7 @@ function App() {
 
   return (
     <DataProvider>
-      <div className="flex flex-col h-screen bg-[rgb(var(--bg))] text-gray-100">
+      <div className="flex flex-col h-screen overflow-hidden bg-[rgb(var(--bg))] text-gray-100">
         <Header />
 
         <div className="nav-bar px-4">
@@ -727,13 +796,14 @@ function App() {
           </div>
         </div>
 
-        {pageContent}
+        <div ref={contentRef} className="flex-1 min-h-0 overflow-hidden">{pageContent}</div>
       </div>
     </DataProvider>
   );
 }
 
 export default App;
+
 
 
 

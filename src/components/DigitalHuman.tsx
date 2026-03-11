@@ -184,7 +184,7 @@ export function DigitalHumanQA() {
 
         <div className={uiStyles.card.default + ' flex-1 space-y-2'}>
           <div className="text-xs text-gray-400">{tr('回答')}</div>
-          <div className="whitespace-pre-wrap text-sm leading-relaxed">
+          <div className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-relaxed">
             {loading ? tr('正在生成...') : answer || tr('暂无回答')}
           </div>
         </div>

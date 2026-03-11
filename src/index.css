@@ -1,4 +1,4 @@
-@import "./styles/theme.css";
+﻿@import "./styles/theme.css";
 
 @tailwind base;
 @tailwind components;
@@ -28,7 +28,8 @@
 
   #root {
     width: 100%;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
   }
 
   a {
@@ -59,7 +60,7 @@
     background: rgb(var(--border) / 0.8);
   }
 
-  /* Subtle grid texture removed for light mode to避免蒙层感；仅深色保留极弱网格 */
+  /* Subtle grid texture removed for light mode to閬垮厤钂欏眰鎰燂紱浠呮繁鑹蹭繚鐣欐瀬寮辩綉鏍?*/
   body::before {
     content: "";
     position: fixed;
@@ -90,7 +91,7 @@
   transition: all var(--transition-base) ease;
 }
 
-/* Aurora 冷光描边卡片 */
+/* Aurora 鍐峰厜鎻忚竟鍗＄墖 */
   .aurora-card {
   position: relative;
   background: rgb(var(--card));
@@ -663,6 +664,387 @@
     -webkit-background-clip: text;
     color: transparent;
   }
+
+  .health-profile-shell {
+    background:
+      radial-gradient(1200px 540px at 0% -10%, rgba(var(--accent), 0.18), transparent 58%),
+      radial-gradient(900px 480px at 100% -16%, rgba(var(--accent2), 0.16), transparent 62%),
+      rgb(var(--bg));
+  }
+
+  .health-profile-font {
+    font-family:
+      "SF Pro Display",
+      "SF Pro Text",
+      "PingFang SC",
+      "Hiragino Sans GB",
+      "Noto Sans SC",
+      "Avenir Next",
+      "Segoe UI",
+      sans-serif;
+    letter-spacing: 0.01em;
+  }
+
+  .hp-hero {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    border-radius: 24px;
+    border: 1px solid rgb(var(--border));
+    background:
+      linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02)),
+      rgb(var(--card));
+    box-shadow: 0 22px 56px rgba(2, 12, 27, 0.2);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 20px;
+  }
+
+  @media (min-width: 1024px) {
+    .hp-hero {
+      grid-template-columns: 1.2fr 1fr;
+      align-items: end;
+      padding: 26px;
+    }
+  }
+
+  .hp-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(var(--fg) / 0.7);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .hp-title {
+    margin: 0;
+    font-size: clamp(24px, 2.6vw, 36px);
+    line-height: 1.18;
+    font-weight: 650;
+    color: rgb(var(--fg));
+  }
+
+  .hp-subtitle {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgb(var(--fg) / 0.65);
+  }
+
+  .hp-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .hp-meta-item {
+    border-radius: 16px;
+    border: 1px solid rgb(var(--border));
+    background: rgba(255, 255, 255, 0.06);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .hp-meta-item span {
+    font-size: 11px;
+    color: rgb(var(--fg) / 0.62);
+  }
+
+  .hp-meta-item strong {
+    font-size: 18px;
+    font-weight: 620;
+    color: rgb(var(--fg));
+  }
+
+  .hp-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  @media (min-width: 1280px) {
+    .hp-layout {
+      grid-template-columns: minmax(0, 1fr) 320px;
+    }
+  }
+
+  .hp-main {
+    min-width: 0;
+  }
+
+  .hp-sidebar {
+    position: sticky;
+    top: 16px;
+  }
+
+  .hp-section {
+    border-radius: 22px;
+    border: 1px solid rgb(var(--border));
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+      rgb(var(--card));
+    box-shadow: 0 14px 34px rgba(2, 12, 27, 0.15);
+    padding: 16px;
+  }
+
+  @media (min-width: 768px) {
+    .hp-section {
+      padding: 18px;
+    }
+  }
+
+  .hp-section-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .hp-section-index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgb(var(--accent));
+    border: 1px solid rgb(var(--accent) / 0.34);
+    background: rgb(var(--accent) / 0.1);
+  }
+
+  .hp-section-title {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.3;
+    font-weight: 620;
+    color: rgb(var(--fg));
+  }
+
+  .hp-section-sub {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: rgb(var(--fg) / 0.6);
+  }
+
+  .hp-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  @media (min-width: 860px) {
+    .hp-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .hp-field {
+    min-width: 0;
+  }
+
+  .hp-field-wide {
+    grid-column: 1 / -1;
+  }
+
+  .hp-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: rgb(var(--fg) / 0.66);
+    margin-bottom: 6px;
+  }
+
+  .hp-required {
+    color: rgb(255 105 97);
+    font-weight: 700;
+  }
+
+  .hp-input,
+  .hp-select,
+  .hp-textarea {
+    width: 100%;
+    border-radius: 14px;
+    border: 1px solid rgb(var(--border));
+    background: rgb(var(--bg) / 0.64);
+    color: rgb(var(--fg));
+    font-size: 14px;
+    line-height: 1.45;
+    transition: border-color var(--transition-base) ease, box-shadow var(--transition-base) ease, background var(--transition-base) ease;
+  }
+
+  .hp-input,
+  .hp-select {
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+
+  .hp-textarea {
+    padding: 10px 12px;
+    min-height: 88px;
+    resize: vertical;
+  }
+
+  .hp-input:focus,
+  .hp-select:focus,
+  .hp-textarea:focus {
+    outline: none;
+    border-color: rgb(var(--accent) / 0.55);
+    background: rgb(var(--bg) / 0.76);
+    box-shadow: 0 0 0 4px rgb(var(--accent) / 0.13);
+  }
+
+  .hp-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .hp-chip {
+    border-radius: 999px;
+    border: 1px solid rgb(var(--border));
+    background: rgb(var(--bg) / 0.56);
+    color: rgb(var(--fg) / 0.8);
+    padding: 8px 12px;
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 560;
+    transition: all var(--transition-base) ease;
+  }
+
+  .hp-chip:hover {
+    border-color: rgb(var(--accent) / 0.35);
+    color: rgb(var(--fg));
+  }
+
+  .hp-chip-active {
+    background: #1d4ed8;
+    border-color: #1e40af;
+    color: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 2px 10px rgba(29, 78, 216, 0.32);
+  }
+
+  .hp-check {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 14px;
+    border: 1px solid rgb(var(--border));
+    background: rgb(var(--bg) / 0.6);
+    color: rgb(var(--fg) / 0.84);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all var(--transition-base) ease;
+  }
+
+  .hp-check-active {
+    border-color: #1e40af;
+    background: rgba(29, 78, 216, 0.12);
+  }
+
+  .hp-check-indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    border: 1px solid rgb(var(--accent) / 0.5);
+    background: rgb(var(--bg));
+    color: rgb(var(--accent));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .hp-action-card {
+    border-radius: 22px;
+    border: 1px solid rgb(var(--border));
+    background: rgb(var(--card));
+    box-shadow: 0 14px 34px rgba(2, 12, 27, 0.15);
+    padding: 12px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .hp-risk-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid rgb(var(--accent) / 0.42);
+    background: rgb(var(--accent) / 0.12);
+    color: rgb(var(--accent));
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 620;
+    padding: 6px 10px;
+  }
+
+  .hp-btn {
+    border-radius: 14px;
+    min-height: 42px;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-weight: 620;
+    transition: all var(--transition-base) ease;
+  }
+
+  .hp-btn-secondary {
+    border-color: rgb(var(--border));
+    background: rgb(var(--bg));
+    color: rgb(var(--fg) / 0.9);
+  }
+
+  .hp-btn-secondary:hover {
+    border-color: rgb(var(--accent) / 0.35);
+    color: rgb(var(--fg));
+  }
+
+  .hp-btn-primary {
+    border-color: rgb(var(--accent) / 0.6);
+    background: linear-gradient(135deg, rgb(var(--accent)), rgb(var(--accent-hover)));
+    color: #fff;
+    box-shadow: 0 10px 24px rgb(var(--accent) / 0.22);
+  }
+
+  .hp-btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgb(var(--accent) / 0.28);
+  }
+
+  .hp-btn-primary:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+  }
+
+  .hp-status-card {
+    border-radius: 18px;
+    border: 1px solid rgb(var(--border));
+    background: rgb(var(--card));
+    color: rgb(var(--fg) / 0.86);
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .hp-status-success {
+    border-color: rgba(16, 185, 129, 0.6);
+    background: rgba(16, 185, 129, 0.14);
+    color: rgba(236, 253, 245, 0.96);
+  }
+
+  .hp-status-error {
+    border-color: rgba(245, 158, 11, 0.64);
+    background: rgba(245, 158, 11, 0.18);
+    color: rgba(255, 251, 235, 0.96);
+  }
 }
 
 /* Design palette overrides for existing Tailwind classes (layout unchanged) */
@@ -722,7 +1104,7 @@
     color: rgb(var(--fg) / 0.82) !important;
   }
 
-  /* Map existing teal accents到设计主题的蓝色玻璃风 */
+  /* Map existing teal accents鍒拌璁′富棰樼殑钃濊壊鐜荤拑椋?*/
   .bg-teal-700,
   .bg-teal-600 {
     background: linear-gradient(135deg, rgb(var(--accent)) 0%, rgb(var(--accent-hover)) 100%) !important;
@@ -745,7 +1127,7 @@
     border-color: rgb(var(--accent)) !important;
   }
 
-  /* 玻璃卡效果覆盖常用容器 */
+  /* 鐜荤拑鍗℃晥鏋滆鐩栧父鐢ㄥ鍣?*/
   .bg-gray-800.border,
   .bg-gray-850.border,
   .glass-card-auto {
@@ -755,4 +1137,26 @@
     -webkit-backdrop-filter: blur(14px);
     box-shadow: var(--shadow-md);
   }
+  /* QA follow-up chips: keep high contrast in both light/dark themes */
+  .qa-followup-wrap {
+    border-radius: 12px;
+    padding-top: 8px;
+    padding-bottom: 2px;
+  }
+  .qa-followup-title {
+    color: rgb(var(--fg) / 0.72);
+  }
+  .qa-followup-btn {
+    border: 1px solid rgb(var(--accent) / 0.36);
+    background: rgb(var(--card));
+    color: rgb(var(--fg) / 0.9);
+    transition: border-color var(--transition-base) ease, background var(--transition-base) ease, color var(--transition-base) ease;
+  }
+  .qa-followup-btn:hover:not(:disabled) {
+    border-color: rgb(var(--accent) / 0.58);
+    background: rgb(var(--bg));
+    color: rgb(var(--fg));
+  }
 }
+
+
