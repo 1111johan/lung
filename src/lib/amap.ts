@@ -89,11 +89,25 @@ export interface NearbyHospital {
   type: string;
 }
 
-const AMAP_WEB_KEY = import.meta.env.VITE_AMAP_WEB_KEY?.trim();
-const AMAP_JS_KEY = import.meta.env.VITE_AMAP_JS_KEY?.trim();
-const AMAP_SECURITY_JS_CODE = import.meta.env.VITE_AMAP_SECURITY_JS_CODE?.trim();
+const HARDCODED_AMAP_WEB_KEY = 'd377beaff86ae953e4aeffdb0a9c63a9';
+const HARDCODED_AMAP_JS_KEY = 'ded55c3e6af8b520b669f4bf64d1f7fe';
+const HARDCODED_AMAP_SECURITY_JS_CODE = 'e2f8871b759cdc88f924a2d1bd0ae6aa';
+
+const AMAP_WEB_KEY = (import.meta.env.VITE_AMAP_WEB_KEY?.trim() || HARDCODED_AMAP_WEB_KEY).trim();
+const AMAP_JS_KEY = (import.meta.env.VITE_AMAP_JS_KEY?.trim() || HARDCODED_AMAP_JS_KEY).trim();
+const AMAP_SECURITY_JS_CODE = (
+  import.meta.env.VITE_AMAP_SECURITY_JS_CODE?.trim() || HARDCODED_AMAP_SECURITY_JS_CODE
+).trim();
 const AMAP_AROUND_API = 'https://restapi.amap.com/v3/place/around';
 const OSM_OVERPASS_API = 'https://overpass-api.de/api/interpreter';
+
+export function getAmapRuntimeConfig() {
+  return {
+    webKey: AMAP_WEB_KEY,
+    jsKey: AMAP_JS_KEY,
+    securityJsCode: AMAP_SECURITY_JS_CODE,
+  };
+}
 
 export function getAmapConfigStatus() {
   if (!AMAP_WEB_KEY && !AMAP_JS_KEY) {

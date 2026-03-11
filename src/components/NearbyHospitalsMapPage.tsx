@@ -5,6 +5,7 @@ import {
   buildAmapNavigationUrl,
   fetchNearbyHospitals,
   getAmapConfigStatus,
+  getAmapRuntimeConfig,
   type GeoPoint,
   type NearbyHospital,
 } from '../lib/amap';
@@ -287,8 +288,9 @@ export function NearbyHospitalsMapPage({ onBack }: { onBack: () => void }) {
   }, [inferQueryError, locateWithAmapGeolocation, text.missingJsKey, text.noHospitals]);
 
   useEffect(() => {
-    const jsKey = import.meta.env.VITE_AMAP_JS_KEY?.trim() || import.meta.env.VITE_AMAP_WEB_KEY?.trim();
-    const securityJsCode = import.meta.env.VITE_AMAP_SECURITY_JS_CODE?.trim();
+    const runtimeConfig = getAmapRuntimeConfig();
+    const jsKey = runtimeConfig.jsKey || runtimeConfig.webKey;
+    const securityJsCode = runtimeConfig.securityJsCode;
     if (!jsKey) {
       setMapError(text.missingJsKey);
       setLoaded(false);
