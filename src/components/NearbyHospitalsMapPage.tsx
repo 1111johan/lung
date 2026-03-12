@@ -140,7 +140,7 @@ export function NearbyHospitalsMapPage({ onBack }: { onBack: () => void }) {
   const text = useMemo(() => {
     if (locale === 'zh') {
       return {
-        title: '定点医院地图推送',
+        title: '智慧地图',
         subtitle: '自动定位并标记附近医院，点击点位可导航',
         missingJsKey: '缺少地图 Key：请配置 VITE_AMAP_JS_KEY（或 VITE_AMAP_WEB_KEY）。',
         mapLoadFailed: '地图加载失败，请稍后重试。',
@@ -162,7 +162,7 @@ export function NearbyHospitalsMapPage({ onBack }: { onBack: () => void }) {
       };
     }
     return {
-      title: 'Designated Hospital Map',
+      title: 'Smart Map',
       subtitle: 'Locate and mark nearby hospitals. Click markers for navigation',
       missingJsKey: 'Missing map key: configure VITE_AMAP_JS_KEY (or VITE_AMAP_WEB_KEY).',
       mapLoadFailed: 'Failed to load map. Please retry later.',

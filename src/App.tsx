@@ -33,13 +33,13 @@ const HOSPITAL_MAP_PATH = '/nearby-hospitals/map';
 const navItems: { id: PageId; label: string; icon: JSX.Element }[] = [
   { id: 'enroll', label: '个人健康档案', icon: <ClipboardList className="h-4 w-4" /> },
   { id: 'qa', label: '智能问答', icon: <ClipboardList className="h-4 w-4 rotate-90" /> },
-  { id: 'hospitalMap', label: '定点医院地图', icon: <MapPin className="h-4 w-4" /> },
-  { id: 'dashboard', label: '结核病风险自测', icon: <Home className="h-4 w-4" /> },
-  { id: 'workstation', label: '筛查工作台', icon: <Layers className="h-4 w-4" /> },
+  { id: 'hospitalMap', label: '智慧地图', icon: <MapPin className="h-4 w-4" /> },
+  { id: 'dashboard', label: '风险自测', icon: <Home className="h-4 w-4" /> },
+  { id: 'workstation', label: '智能筛查', icon: <Layers className="h-4 w-4" /> },
   { id: 'reports', label: '报告中心', icon: <FileText className="h-4 w-4" /> },
   { id: 'referrals', label: '转诊与上报', icon: <ClipboardList className="h-4 w-4" /> },
   { id: 'followup', label: '随访管理', icon: <Clock4 className="h-4 w-4" /> },
-  { id: 'research', label: '科研与教学', icon: <Stethoscope className="h-4 w-4" /> },
+  { id: 'research', label: '统计与分析', icon: <Stethoscope className="h-4 w-4" /> },
   { id: 'audit', label: '系统与审计', icon: <Shield className="h-4 w-4" /> },
 ];
 
@@ -571,7 +571,7 @@ function ResearchPage() {
     <div className="p-4 h-full overflow-y-auto bg-[rgb(var(--bg))] space-y-3">
       <div className="flex items-center gap-2 text-gray-200 text-sm">
         <Stethoscope className="h-4 w-4 text-teal-400" />
-        {tr('科研与教学（脱敏导出/病例库）')}
+        {tr('统计与分析（脱敏导出/病例库）')}
       </div>
       <div className="aurora-card glass-card-hover p-3 text-sm space-y-3">
         <div className="text-gray-300">{tr('队列构建：地区 / 征象 / 检验 / 随访齐全')}</div>
