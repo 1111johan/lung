@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, useEffect, useRef } from 'react';
+﻿import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import type { JSX } from 'react';
 import {
   Activity,
@@ -42,6 +42,19 @@ const navItems: { id: PageId; label: string; icon: JSX.Element }[] = [
   { id: 'research', label: '统计与分析', icon: <Stethoscope className="h-4 w-4" /> },
   { id: 'audit', label: '系统与审计', icon: <Shield className="h-4 w-4" /> },
 ];
+
+function formatDateOnly(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function dueAtFromNow(offsetDays: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return formatDateOnly(date);
+}
 
 function DashboardPage({
   onNavigate,
@@ -524,7 +537,240 @@ function ReferralsPage() {
 function FollowupPage() {
   const { tr } = useI18n();
   const { followups, patients, updateFollowupStatus } = useDataContext();
-  const getPatientName = (id: string) => patients.find((p) => p.id === id)?.name || id;
+  const getPatientName = useCallback(
+    (id: string) => patients.find((p) => p.id === id)?.name || id,
+    [patients]
+  );
+
+  type AdherenceLevel = 'good' | 'partial' | 'poor';
+  type ReminderState = 'pending' | 'done' | 'missed';
+  type AutoTaskStatus = 'pending' | 'done';
+  type RiskLevel = 'high' | 'medium' | 'low';
+
+  interface SymptomLogEntry {
+    id: string;
+    patientId: string;
+    recordedAt: string;
+    cough: number;
+    fever: number;
+    fatigue: number;
+    adherence: AdherenceLevel;
+    note: string;
+  }
+
+  interface MedicationReminderItem {
+    id: string;
+    patientId: string;
+    medication: string;
+    schedule: string;
+    nextAt: string;
+    status: ReminderState;
+  }
+
+  interface AutoTaskItem {
+    id: string;
+    patientId: string;
+    title: string;
+    dueAt: string;
+    priority: RiskLevel;
+    status: AutoTaskStatus;
+    source: string;
+  }
+
+  const [symptomDraft, setSymptomDraft] = useState<{
+    patientId: string;
+    cough: number;
+    fever: number;
+    fatigue: number;
+    adherence: AdherenceLevel;
+    note: string;
+  }>({
+    patientId: '',
+    cough: 0,
+    fever: 0,
+    fatigue: 0,
+    adherence: 'good',
+    note: '',
+  });
+
+  const [symptomLogs, setSymptomLogs] = useState<SymptomLogEntry[]>([]);
+
+  const [medicationReminders, setMedicationReminders] = useState<MedicationReminderItem[]>(() =>
+    patients.slice(0, 3).flatMap((patient, index) => [
+      {
+        id: `MR-${patient.id}-${index}-AM`,
+        patientId: patient.id,
+        medication: '异烟肼+利福平',
+        schedule: '每日 08:00',
+        nextAt: dueAtFromNow(0),
+        status: 'pending' as ReminderState,
+      },
+      {
+        id: `MR-${patient.id}-${index}-PM`,
+        patientId: patient.id,
+        medication: '乙胺丁醇',
+        schedule: '每日 20:00',
+        nextAt: dueAtFromNow(0),
+        status: 'pending' as ReminderState,
+      },
+    ])
+  );
+  const [autoTasks, setAutoTasks] = useState<AutoTaskItem[]>([]);
+
+  useEffect(() => {
+    if (!symptomDraft.patientId && patients[0]?.id) {
+      setSymptomDraft((prev) => ({ ...prev, patientId: patients[0].id }));
+    }
+  }, [patients, symptomDraft.patientId]);
+
+  useEffect(() => {
+    if (medicationReminders.length === 0 && patients.length > 0) {
+      setMedicationReminders(
+        patients.slice(0, 3).flatMap((patient, index) => [
+          {
+            id: `MR-${patient.id}-${index}-AM`,
+            patientId: patient.id,
+            medication: '异烟肼+利福平',
+            schedule: '每日 08:00',
+            nextAt: dueAtFromNow(0),
+            status: 'pending' as ReminderState,
+          },
+          {
+            id: `MR-${patient.id}-${index}-PM`,
+            patientId: patient.id,
+            medication: '乙胺丁醇',
+            schedule: '每日 20:00',
+            nextAt: dueAtFromNow(0),
+            status: 'pending' as ReminderState,
+          },
+        ])
+      );
+    }
+  }, [medicationReminders.length, patients]);
+
+  const calcRiskFromSymptomLog = useCallback((log: SymptomLogEntry) => {
+    const symptomScore = (log.cough + log.fever + log.fatigue) / 9;
+    const adherencePenalty = log.adherence === 'poor' ? 0.35 : log.adherence === 'partial' ? 0.18 : 0;
+    const score = Math.min(1, symptomScore * 0.7 + adherencePenalty);
+    const level: RiskLevel = score >= 0.7 ? 'high' : score >= 0.4 ? 'medium' : 'low';
+    return { score, level };
+  }, []);
+
+  const latestRiskRows = useMemo(() => {
+    const latestLogByPatient = new Map<string, SymptomLogEntry>();
+    symptomLogs.forEach((item) => {
+      if (!latestLogByPatient.has(item.patientId)) {
+        latestLogByPatient.set(item.patientId, item);
+      }
+    });
+
+    return Array.from(latestLogByPatient.values()).map((log) => {
+      const risk = calcRiskFromSymptomLog(log);
+      return {
+        patientId: log.patientId,
+        patientName: getPatientName(log.patientId),
+        recordedAt: log.recordedAt,
+        adherence: log.adherence,
+        score: risk.score,
+        level: risk.level,
+      };
+    });
+  }, [symptomLogs, calcRiskFromSymptomLog, getPatientName]);
+
+  const upsertAutoTask = (task: AutoTaskItem) => {
+    setAutoTasks((prev) => {
+      const dedupKey = `${task.patientId}-${task.title}-${task.dueAt}`;
+      const exists = prev.some((item) => `${item.patientId}-${item.title}-${item.dueAt}` === dedupKey);
+      if (exists) return prev;
+      return [task, ...prev].slice(0, 100);
+    });
+  };
+
+  const createAutoTasksFromLog = (log: SymptomLogEntry) => {
+    const { level } = calcRiskFromSymptomLog(log);
+    const tasks: AutoTaskItem[] = [];
+
+    if (level === 'high') {
+      tasks.push({
+        id: `AT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        patientId: log.patientId,
+        title: '48小时内电话复评（高危）',
+        dueAt: dueAtFromNow(2),
+        priority: 'high',
+        status: 'pending',
+        source: '症状追踪触发',
+      });
+    } else if (level === 'medium') {
+      tasks.push({
+        id: `AT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        patientId: log.patientId,
+        title: '7天内症状复核（中危）',
+        dueAt: dueAtFromNow(7),
+        priority: 'medium',
+        status: 'pending',
+        source: '症状追踪触发',
+      });
+    }
+
+    if (log.adherence === 'poor') {
+      tasks.push({
+        id: `AT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        patientId: log.patientId,
+        title: '24小时内用药依从性干预',
+        dueAt: dueAtFromNow(1),
+        priority: 'high',
+        status: 'pending',
+        source: '用药提醒触发',
+      });
+    }
+
+    tasks.forEach(upsertAutoTask);
+  };
+
+  const submitSymptomLog = () => {
+    if (!symptomDraft.patientId) return;
+    const entry: SymptomLogEntry = {
+      id: `SYM-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      patientId: symptomDraft.patientId,
+      recordedAt: new Date().toLocaleString(),
+      cough: symptomDraft.cough,
+      fever: symptomDraft.fever,
+      fatigue: symptomDraft.fatigue,
+      adherence: symptomDraft.adherence,
+      note: symptomDraft.note.trim(),
+    };
+    setSymptomLogs((prev) => [entry, ...prev].slice(0, 100));
+    createAutoTasksFromLog(entry);
+    setSymptomDraft((prev) => ({ ...prev, cough: 0, fever: 0, fatigue: 0, adherence: 'good', note: '' }));
+  };
+
+  const updateReminderStatus = (id: string, status: ReminderState) => {
+    setMedicationReminders((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              status,
+              nextAt: status === 'done' ? dueAtFromNow(1) : item.nextAt,
+            }
+          : item
+      )
+    );
+  };
+
+  const updateAutoTaskStatus = (id: string, status: AutoTaskStatus) => {
+    setAutoTasks((prev) => prev.map((item) => (item.id === id ? { ...item, status } : item)));
+  };
+
+  const riskBadgeClass = (risk: RiskLevel) => {
+    if (risk === 'high') return 'bg-red-900 text-red-200';
+    if (risk === 'medium') return 'bg-amber-900 text-amber-200';
+    return 'bg-emerald-900 text-emerald-200';
+  };
+
+  const symptomOptions = [0, 1, 2, 3];
+  const pendingAutoTasks = autoTasks.filter((task) => task.status === 'pending');
+
   return (
     <div className="p-4 h-full overflow-y-auto bg-[rgb(var(--bg))]">
       <div className="flex items-center justify-between mb-3">
@@ -534,7 +780,176 @@ function FollowupPage() {
         </div>
         <span className="text-[11px] text-gray-500">{tr('节点：2周 / 1月 / 3月；逾期自动提醒')}</span>
       </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 mb-3">
+        <div className="aurora-card glass-card-hover p-3 space-y-3">
+          <div className="text-sm text-gray-200">院外症状追踪上报</div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <label className="text-gray-400 col-span-2">患者</label>
+            <select
+              className={uiStyles.input.default + ' col-span-2'}
+              value={symptomDraft.patientId}
+              onChange={(e) => setSymptomDraft((prev) => ({ ...prev, patientId: e.target.value }))}
+            >
+              <option value="">请选择患者</option>
+              {patients.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}（{p.id}）
+                </option>
+              ))}
+            </select>
+
+            <label className="text-gray-400">咳嗽程度</label>
+            <label className="text-gray-400">发热程度</label>
+            <select
+              className={uiStyles.input.default}
+              value={symptomDraft.cough}
+              onChange={(e) => setSymptomDraft((prev) => ({ ...prev, cough: Number(e.target.value) }))}
+            >
+              {symptomOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+            <select
+              className={uiStyles.input.default}
+              value={symptomDraft.fever}
+              onChange={(e) => setSymptomDraft((prev) => ({ ...prev, fever: Number(e.target.value) }))}
+            >
+              {symptomOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+
+            <label className="text-gray-400">乏力程度</label>
+            <label className="text-gray-400">用药依从性</label>
+            <select
+              className={uiStyles.input.default}
+              value={symptomDraft.fatigue}
+              onChange={(e) => setSymptomDraft((prev) => ({ ...prev, fatigue: Number(e.target.value) }))}
+            >
+              {symptomOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+            <select
+              className={uiStyles.input.default}
+              value={symptomDraft.adherence}
+              onChange={(e) =>
+                setSymptomDraft((prev) => ({ ...prev, adherence: e.target.value as AdherenceLevel }))
+              }
+            >
+              <option value="good">良好</option>
+              <option value="partial">一般</option>
+              <option value="poor">较差</option>
+            </select>
+            <textarea
+              className={uiStyles.input.textarea + ' col-span-2 min-h-[70px]'}
+              placeholder="补充说明（选填）"
+              value={symptomDraft.note}
+              onChange={(e) => setSymptomDraft((prev) => ({ ...prev, note: e.target.value }))}
+            />
+          </div>
+          <button className={uiStyles.button.primary + ' w-full'} onClick={submitSymptomLog}>
+            提交症状追踪
+          </button>
+          <div className="text-[11px] text-gray-500">
+            评分说明：症状 0-3 分，依从性差会触发风险加权。
+          </div>
+        </div>
+
+        <div className="aurora-card glass-card-hover p-3 space-y-2">
+          <div className="text-sm text-gray-200">药提醒（院外）</div>
+          <div className="space-y-2 max-h-[320px] overflow-y-auto">
+            {medicationReminders.map((item) => (
+              <div key={item.id} className="rounded border border-[rgb(var(--border))] bg-[rgb(var(--bg))] p-2 text-xs">
+                <div className="text-gray-200 font-semibold">{item.medication}</div>
+                <div className="text-gray-400">{getPatientName(item.patientId)} · {item.schedule}</div>
+                <div className="text-gray-500">下次提醒：{item.nextAt}</div>
+                <div className="flex items-center justify-between mt-1">
+                  <span className={`px-2 py-0.5 rounded ${
+                    item.status === 'pending'
+                      ? 'bg-amber-900 text-amber-200'
+                      : item.status === 'done'
+                        ? 'bg-emerald-900 text-emerald-200'
+                        : 'bg-red-900 text-red-200'
+                  }`}>
+                    {item.status === 'pending' ? '待提醒' : item.status === 'done' ? '已完成' : '漏服'}
+                  </span>
+                  <div className="flex gap-1">
+                    <button
+                      className={uiStyles.button.outline + ' text-[11px] px-2 py-0.5'}
+                      onClick={() => updateReminderStatus(item.id, 'done')}
+                    >
+                      完成
+                    </button>
+                    <button
+                      className={uiStyles.button.secondary + ' text-[11px] px-2 py-0.5'}
+                      onClick={() => updateReminderStatus(item.id, 'missed')}
+                    >
+                      漏服
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="aurora-card glass-card-hover p-3 space-y-2">
+          <div className="text-sm text-gray-200">医护端：自动风险分层 & 精准随访任务</div>
+          <div className="space-y-2 max-h-[320px] overflow-y-auto">
+            {latestRiskRows.length === 0 ? (
+              <div className="text-xs text-gray-500">暂无院外上报数据</div>
+            ) : (
+              latestRiskRows.map((row) => (
+                <div key={row.patientId + row.recordedAt} className="rounded border border-[rgb(var(--border))] bg-[rgb(var(--bg))] p-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="text-gray-200">{row.patientName}</div>
+                    <span className={`px-2 py-0.5 rounded ${riskBadgeClass(row.level)}`}>
+                      {row.level === 'high' ? '高危' : row.level === 'medium' ? '中危' : '低危'}
+                    </span>
+                  </div>
+                  <div className="text-gray-400 mt-1">风险分：{Math.round(row.score * 100)}% · 依从性：{row.adherence}</div>
+                  <div className="text-gray-500">{row.recordedAt}</div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="text-xs text-gray-400 border-t border-gray-700 pt-2">
+            自动任务（待处理）：{pendingAutoTasks.length}
+          </div>
+          <div className="space-y-2 max-h-[180px] overflow-y-auto">
+            {pendingAutoTasks.length === 0 ? (
+              <div className="text-xs text-gray-500">暂无自动任务</div>
+            ) : (
+              pendingAutoTasks.map((task) => (
+                <div key={task.id} className="rounded border border-[rgb(var(--border))] bg-[rgb(var(--bg))] p-2 text-xs">
+                  <div className="text-gray-200">{task.title}</div>
+                  <div className="text-gray-400">{getPatientName(task.patientId)} · 到期 {task.dueAt}</div>
+                  <div className="text-gray-500">{task.source}</div>
+                  <div className="mt-1">
+                    <button
+                      className={uiStyles.button.primary + ' text-[11px] px-2 py-0.5'}
+                      onClick={() => updateAutoTaskStatus(task.id, 'done')}
+                    >
+                      标记已处理
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="aurora-card glass-card-hover divide-y divide-gray-700">
+        <div className="p-3 text-xs text-gray-400 border-b border-gray-700">院内随访任务</div>
         {followups.map((row) => (
           <div key={row.id} className="p-3 flex items-center justify-between text-sm">
             <div className="flex items-center gap-3">
@@ -803,6 +1218,8 @@ function App() {
 }
 
 export default App;
+
+
 
 
 
