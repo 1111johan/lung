@@ -4,7 +4,7 @@ import { AlertTriangle, ArrowLeft, Crosshair, RefreshCw } from 'lucide-react';
 import {
   buildAmapNavigationUrl,
   fetchNearbyHospitals,
-  getAmapConfigStatus,
+  getAmapMapConfigStatus,
   getAmapRuntimeConfig,
   type GeoPoint,
   type NearbyHospital,
@@ -142,8 +142,9 @@ export function NearbyHospitalsMapPage({ onBack }: { onBack: () => void }) {
       return {
         title: '智慧地图',
         subtitle: '自动定位并标记附近医院，点击点位可导航',
-        missingJsKey: '缺少地图 Key：请配置 VITE_AMAP_JS_KEY（或 VITE_AMAP_WEB_KEY）。',
-        mapLoadFailed: '地图加载失败，请稍后重试。',
+        missingJsKey: '缺少地图 Key：请配置 VITE_AMAP_JS_KEY（Web端 JS API Key）。',
+        mapLoadFailed: '地图加载失败。请检查 JS Key、安全密钥（securityJsCode）和域名白名单。',
+        missingSecurityCode: '未配置 securityJsCode。若底图空白，请在高德控制台为该 JS Key 配置安全密钥并更新前端。',
         queryFailed: '附近医院查询失败，请检查网络/代理或稍后重试。',
         locateBtn: '定位并刷新',
         locating: '定位中',
@@ -164,8 +165,9 @@ export function NearbyHospitalsMapPage({ onBack }: { onBack: () => void }) {
     return {
       title: 'Smart Map',
       subtitle: 'Locate and mark nearby hospitals. Click markers for navigation',
-      missingJsKey: 'Missing map key: configure VITE_AMAP_JS_KEY (or VITE_AMAP_WEB_KEY).',
-      mapLoadFailed: 'Failed to load map. Please retry later.',
+      missingJsKey: 'Missing map key: configure VITE_AMAP_JS_KEY (Web JS API key).',
+      mapLoadFailed: 'Map load failed. Verify JS key, securityJsCode, and domain whitelist.',
+      missingSecurityCode: 'securityJsCode is missing. If base map is blank, configure JS security code for this key.',
       queryFailed: 'Failed to fetch nearby hospitals. Check network/proxy and retry.',
       locateBtn: 'Locate & Refresh',
       locating: 'Locating',
@@ -197,9 +199,59 @@ export function NearbyHospitalsMapPage({ onBack }: { onBack: () => void }) {
       if (message.includes('10001') || message.includes('INVALID_USER_KEY')) {
         return locale === 'zh' ? '高德 Key 无效，请检查 Key 与服务权限。' : 'Invalid Amap key. Please verify key permissions.';
       }
+      if (
+        message.includes('10006') ||
+        message.includes('INVALID_USER_DOMAIN') ||
+        message.includes('USERKEY_PLAT_NOMATCH')
+      ) {
+        return locale === 'zh'
+          ? '域名白名单不匹配，请在高德控制台把当前站点域名加入 JS Key 白名单。'
+          : 'Domain whitelist mismatch. Add current site domain to JS key whitelist.';
+      }
+      if (
+        message.includes('INVALID_USER_SCODE') ||
+        message.includes('SECURITY') ||
+        message.includes('JS_CODE') ||
+        message.includes('JSCODE')
+      ) {
+        return locale === 'zh'
+          ? 'securityJsCode 校验失败，请检查 JS Key 与安全密钥是否同一应用。'
+          : 'securityJsCode validation failed. Ensure JS key and security code are from the same app.';
+      }
       return text.queryFailed;
     },
     [locale, text]
+  );
+
+  const inferMapLoadError = useCallback(
+    (error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error || '');
+      if (message.includes('MISSING_AMAP_JS_KEY')) return text.missingJsKey;
+      if (
+        message.includes('10006') ||
+        message.includes('INVALID_USER_DOMAIN') ||
+        message.includes('USERKEY_PLAT_NOMATCH')
+      ) {
+        return locale === 'zh'
+          ? '地图瓦片加载被域名白名单拦截，请在高德控制台配置当前域名。'
+          : 'Map tiles blocked by domain whitelist. Configure current domain in Amap console.';
+      }
+      if (
+        message.includes('INVALID_USER_SCODE') ||
+        message.includes('SECURITY') ||
+        message.includes('JS_CODE') ||
+        message.includes('JSCODE')
+      ) {
+        return locale === 'zh'
+          ? '地图安全密钥校验失败，请核对 securityJsCode。'
+          : 'Map security code validation failed. Please verify securityJsCode.';
+      }
+      if (message.includes('10001') || message.includes('INVALID_USER_KEY')) {
+        return locale === 'zh' ? '地图 JS Key 无效，请检查 Key 类型与权限。' : 'Invalid JS key for map.';
+      }
+      return `${text.mapLoadFailed}${message ? ` (${message})` : ''}`;
+    },
+    [locale, text.mapLoadFailed, text.missingJsKey]
   );
 
   const locateWithAmapGeolocation = useCallback(async (): Promise<GeoPoint> => {
@@ -245,7 +297,7 @@ export function NearbyHospitalsMapPage({ onBack }: { onBack: () => void }) {
   }, []);
 
   const locateAndQueryHospitals = useCallback(async () => {
-    const config = getAmapConfigStatus();
+    const config = getAmapMapConfigStatus();
     if (!config.configured) {
       setQueryError(text.missingJsKey);
       setHospitals([]);
@@ -289,7 +341,7 @@ export function NearbyHospitalsMapPage({ onBack }: { onBack: () => void }) {
 
   useEffect(() => {
     const runtimeConfig = getAmapRuntimeConfig();
-    const jsKey = runtimeConfig.jsKey || runtimeConfig.webKey;
+    const jsKey = runtimeConfig.jsKey;
     const securityJsCode = runtimeConfig.securityJsCode;
     if (!jsKey) {
       setMapError(text.missingJsKey);
@@ -301,6 +353,10 @@ export function NearbyHospitalsMapPage({ onBack }: { onBack: () => void }) {
     let cancelled = false;
     setMapError('');
     setLoaded(false);
+
+    if (!securityJsCode) {
+      setQueryError((prev) => prev || text.missingSecurityCode);
+    }
 
     if (securityJsCode && typeof window !== 'undefined') {
       (window as WindowWithAmapSecurity)._AMapSecurityConfig = { securityJsCode };
@@ -331,9 +387,9 @@ export function NearbyHospitalsMapPage({ onBack }: { onBack: () => void }) {
         });
         setLoaded(true);
       })
-      .catch(() => {
+      .catch((error) => {
         if (!cancelled) {
-          setMapError(text.mapLoadFailed);
+          setMapError(inferMapLoadError(error));
           setLoaded(false);
         }
       });
@@ -351,7 +407,7 @@ export function NearbyHospitalsMapPage({ onBack }: { onBack: () => void }) {
       infoWindowRef.current = null;
       amapRef.current = null;
     };
-  }, [text.mapLoadFailed, text.missingJsKey]);
+  }, [inferMapLoadError, text.missingJsKey, text.missingSecurityCode]);
 
   useEffect(() => {
     if (!loaded) return;

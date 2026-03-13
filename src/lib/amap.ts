@@ -123,6 +123,20 @@ export function getAmapConfigStatus() {
   } as const;
 }
 
+export function getAmapMapConfigStatus() {
+  if (!AMAP_JS_KEY) {
+    return {
+      configured: false,
+      reason: 'MISSING_AMAP_JS_KEY',
+    } as const;
+  }
+
+  return {
+    configured: true,
+    reason: null,
+  } as const;
+}
+
 function parseLocation(location: string | undefined) {
   if (!location) return null;
   const [lngText, latText] = location.split(',');
