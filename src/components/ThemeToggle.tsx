@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Moon, Sun, MonitorSmartphone } from 'lucide-react';
 import { applyTheme, ThemeMode } from '../lib/theme';
 import { useI18n } from '../lib/i18n';
@@ -19,9 +19,7 @@ export function ThemeToggleSimple() {
   }, [mode]);
 
   const icon =
-    mode === 'dark' ? <Moon className="h-4 w-4" /> :
-    mode === 'light' ? <Sun className="h-4 w-4" /> :
-    <MonitorSmartphone className="h-4 w-4" />;
+    mode === 'dark' ? <Moon className="h-4 w-4" /> : mode === 'light' ? <Sun className="h-4 w-4" /> : <MonitorSmartphone className="h-4 w-4" />;
 
   const label = mode === 'dark' ? tr('深色') : mode === 'light' ? tr('浅色') : tr('跟随系统');
 

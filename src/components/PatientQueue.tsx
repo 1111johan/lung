@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+﻿import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import type { PatientWithAnalysis } from '../lib/database.types';
 import { AlertTriangle, MapPin, Trash2 } from 'lucide-react';
@@ -22,7 +22,7 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
     return [...patients].sort((a, b) => (b.risk_score || 0) - (a.risk_score || 0));
   }, [patients]);
 
-  const highRiskCount = sortedPatients.filter(p => p.risk_level === 'high').length;
+  const highRiskCount = sortedPatients.filter((p) => p.risk_level === 'high').length;
 
   const riskAccent = {
     high: 'rgb(239 68 68)',
@@ -44,7 +44,9 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
   return (
     <aside className={`${uiStyles.sidebar.default} patient-queue workstation-panel workstation-panel-strong`}>
       <div className="p-3 border-b border-gray-700 font-medium flex justify-between items-center">
-        <span className="text-gray-200">{tr('待筛查')} ({sortedPatients.length})</span>
+        <span className="text-gray-200">
+          {tr('待筛查')} ({sortedPatients.length})
+        </span>
         {highRiskCount > 0 && (
           <span className="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" />
@@ -62,21 +64,19 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
           const findingsArray = filterFindings(rawFindings);
           const findings = findingsArray[0];
 
-          const riskClass =
-            riskLevel === 'high' ? 'patient-card-danger' : riskLevel === 'medium' ? 'patient-card-warn' : 'patient-card-ok';
+          const riskClass = riskLevel === 'high' ? 'patient-card-danger' : riskLevel === 'medium' ? 'patient-card-warn' : 'patient-card-ok';
 
           return (
             <div
               key={patient.id}
               onClick={() => onSelectPatient(patient)}
               style={{ ['--risk-color' as string]: riskAccent[riskLevel] } as CSSProperties}
-              className={`p-3 mb-2 cursor-pointer patient-card ${riskClass} ${
-                selectedPatientId === patient.id ? 'patient-card-active' : ''
-              }`}
+              className={`p-3 mb-2 cursor-pointer patient-card ${riskClass} ${selectedPatientId === patient.id ? 'patient-card-active' : ''}`}
             >
               <div className="flex justify-between mb-1 items-center gap-2">
                 <span className="font-bold text-gray-200">
-                  {PATIENT_DISPLAY.nameMaskPattern(patient.name)} ({patient.gender === 'male' ? tr('男') : tr('女')}, {patient.age}{tr('岁')})
+                  {PATIENT_DISPLAY.nameMaskPattern(patient.name)} ({patient.gender === 'male' ? tr('男') : tr('女')}, {patient.age}
+                  {tr('岁')})
                 </span>
                 <div className="flex items-center gap-2">
                   {analysis && (
@@ -107,7 +107,7 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
 
               <div className="text-xs text-secondary mb-2 flex items-center gap-2">
                 <span>{patient.patient_code}</span>
-                <span>•</span>
+                <span>·</span>
                 <div className="flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
                   <span>{patient.region}</span>
@@ -116,9 +116,7 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
 
               <div className="flex flex-wrap gap-1.5">
                 {findings?.location && (
-                  <span className="text-[10px] bg-gray-700 px-1.5 py-0.5 rounded-full text-[rgb(var(--accent))]">
-                    AI: {findings.location}
-                  </span>
+                  <span className="text-[10px] bg-gray-700 px-1.5 py-0.5 rounded-full text-[rgb(var(--accent))]">AI: {findings.location}</span>
                 )}
                 {patient.chief_complaint && (
                   <span className="text-[10px] bg-gray-700 px-1.5 py-0.5 rounded-full text-[rgb(var(--warning))]">
@@ -126,9 +124,7 @@ export function PatientQueue({ onSelectPatient, selectedPatientId }: PatientQueu
                   </span>
                 )}
                 {patient.tb_history && (
-                  <span className="text-[10px] bg-gray-700 px-1.5 py-0.5 rounded-full text-[rgb(var(--warning))]">
-                    {tr('既往TB史')}
-                  </span>
+                  <span className="text-[10px] bg-gray-700 px-1.5 py-0.5 rounded-full text-[rgb(var(--warning))]">{tr('既往TB史')}</span>
                 )}
               </div>
             </div>

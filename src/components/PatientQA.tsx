@@ -80,7 +80,7 @@ const hospitalIntentKeywords = [
 ];
 
 const followupTemplates: Record<
-  'zh' | 'en',
+  AppLocale,
   {
     general: string[];
     symptom: string[];
@@ -154,11 +154,106 @@ const followupTemplates: Record<
       'What prior records should I bring before going to emergency care?',
     ],
   },
+  th: {
+    general: [
+      'ถ้าจะไปโรงพยาบาลตอนนี้ ควรตรวจ 2 รายการไหนก่อน?',
+      'กรณีแบบนี้ควรติดตามซ้ำทุกกี่วัน?',
+      'มีสัญญาณอะไรบ้างที่ควรไปพบแพทย์ทันที?',
+    ],
+    symptom: [
+      'อาการใดบ่งชี้ว่าความเสี่ยงวัณโรคสูงขึ้นมากที่สุด?',
+      'อาการนานแค่ไหนจึงควรตรวจภาพถ่ายทรวงอกทันที?',
+      'ถ้าอาการดีขึ้นแล้ว ยังต้องติดตามตรวจต่อหรือไม่?',
+    ],
+    test: [
+      'ควรจัดลำดับ IGRA, PPD, ตรวจเสมหะ และภาพถ่ายทรวงอกอย่างไร?',
+      'ถ้าผลตรวจขัดแย้งกันควรตีความอย่างไร?',
+      'ถ้าตรวจครั้งแรกเป็นลบ ยังควรตรวจซ้ำหรือไม่?',
+    ],
+    treatment: [
+      'หากยืนยันวัณโรค ระยะเวลารักษามาตรฐานนานเท่าไร?',
+      'ถ้าลืมกินยา ควรแก้ไขอย่างไรและเสี่ยงมากไหม?',
+      'ระหว่างรักษา ค่าติดตามใดสำคัญที่สุด?',
+    ],
+    prevention: [
+      'คนในครอบครัวหรือผู้สัมผัสใกล้ชิดควรคัดกรองอย่างไรตอนนี้?',
+      'แนวทางแยกกักที่บ้านและป้องกันการแพร่เชื้อมีอะไรบ้าง?',
+      'โดยทั่วไปเมื่อไรจึงพิจารณายุติการแยกกักได้?',
+    ],
+    emergency: [
+      'ถ้ามีไอเป็นเลือดหรือหายใจลำบาก ควรทำอะไรเป็นอันดับแรก?',
+      'สัญญาณอันตรายใดที่บ่งชี้ว่าควรไปฉุกเฉินทันที?',
+      'ก่อนไปฉุกเฉินควรเตรียมผลตรวจเดิมอะไรไปด้วย?',
+    ],
+  },
+  id: {
+    general: [
+      'Jika saya ke rumah sakit sekarang, dua pemeriksaan apa yang diprioritaskan?',
+      'Dalam kondisi ini, seberapa sering saya perlu kontrol ulang?',
+      'Tanda apa yang mengharuskan saya segera berobat langsung?',
+    ],
+    symptom: [
+      'Gejala mana yang paling mengarah ke peningkatan risiko TB?',
+      'Jika gejala berlangsung berapa lama harus segera lakukan pencitraan?',
+      'Jika gejala membaik, apakah tetap perlu kontrol ulang?',
+    ],
+    test: [
+      'Bagaimana urutan IGRA, PPD, pemeriksaan dahak, dan foto toraks?',
+      'Bagaimana menilai hasil pemeriksaan yang saling bertentangan?',
+      'Jika pemeriksaan pertama negatif, apakah perlu tes ulang?',
+    ],
+    treatment: [
+      'Jika TB terkonfirmasi, berapa lama durasi terapi standar?',
+      'Jika ada dosis terlewat, bagaimana cara koreksi yang tepat?',
+      'Indikator kontrol apa yang paling penting selama terapi?',
+    ],
+    prevention: [
+      'Langkah skrining apa yang perlu dilakukan keluarga serumah sekarang?',
+      'Apa poin penting isolasi rumah dan pencegahan penularan?',
+      'Kapan isolasi biasanya bisa dihentikan dengan aman?',
+    ],
+    emergency: [
+      'Jika batuk darah atau sesak napas, langkah pertama apa?',
+      'Tanda bahaya apa yang menandakan perlu ke IGD sekarang?',
+      'Dokumen hasil pemeriksaan apa yang perlu dibawa ke IGD?',
+    ],
+  },
+  ms: {
+    general: [
+      'Jika saya ke hospital sekarang, dua ujian apa patut diutamakan?',
+      'Untuk keadaan ini, berapa kerap perlu semakan susulan?',
+      'Tanda amaran apa yang perlukan rawatan bersemuka segera?',
+    ],
+    symptom: [
+      'Gejala mana paling menunjukkan risiko TB meningkat?',
+      'Jika gejala berlarutan, bila perlu buat imejan segera?',
+      'Jika gejala berkurang, adakah masih perlu semakan semula?',
+    ],
+    test: [
+      'Bagaimana susunan IGRA, PPD, ujian kahak dan imejan dada?',
+      'Bagaimana menilai keputusan ujian yang bercanggah?',
+      'Jika ujian pertama negatif, adakah masih perlu ujian semula?',
+    ],
+    treatment: [
+      'Jika TB disahkan, berapa lama tempoh rawatan standard?',
+      'Jika dos ubat terlepas, bagaimana langkah pembetulan terbaik?',
+      'Penunjuk susulan apa paling penting semasa rawatan?',
+    ],
+    prevention: [
+      'Apakah langkah saringan untuk ahli keluarga/serumah sekarang?',
+      'Apakah perkara penting bagi isolasi di rumah dan pencegahan?',
+      'Bilakah isolasi biasanya boleh ditamatkan dengan selamat?',
+    ],
+    emergency: [
+      'Jika batuk berdarah atau sukar bernafas, apakah langkah pertama?',
+      'Tanda bahaya apa menunjukkan perlu ke kecemasan segera?',
+      'Rekod pemeriksaan apa yang perlu dibawa ke jabatan kecemasan?',
+    ],
+  },
 };
 
 function buildFollowupQuestions(answer: string, previousQuestion: string, locale: AppLocale) {
-  const lang: 'zh' | 'en' = locale === 'zh' ? 'zh' : 'en';
-  const templates = followupTemplates[lang];
+  const templates = followupTemplates[locale] || followupTemplates.en;
   const merged = `${answer} ${previousQuestion}`.toLowerCase();
 
   const pool: string[] = [];
@@ -192,99 +287,155 @@ function isHospitalIntent(text: string) {
 function formatDistance(distanceMeter: number, locale: AppLocale) {
   if (distanceMeter < 1000) return `${Math.max(1, Math.round(distanceMeter))}m`;
   const km = (distanceMeter / 1000).toFixed(1);
-  return locale === 'zh' ? `${km}公里` : `${km}km`;
+  if (locale === 'zh') return `${km}公里`;
+  if (locale === 'th') return `${km}กม.`;
+  return `${km}km`;
 }
 
 function buildHospitalSuccessReply(point: GeoPoint, hospitals: NearbyHospital[], locale: AppLocale) {
-  if (locale === 'zh') {
-    const topHospitals = hospitals.slice(0, 5);
-    const listText = topHospitals
-      .map((hospital, index) => {
-        return [
-          `${index + 1}. ${hospital.name}（${formatDistance(hospital.distanceMeter, locale)}）`,
-          `地址：${hospital.address || '未知地址'}`,
-          `电话：${hospital.tel || '暂无'}`,
-        ].join('\n');
-      })
-      .join('\n');
-
-    return [
-      '已根据你当前位置推荐附近医院（优先结核/呼吸相关）：',
-      `当前位置：${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
-      listText || '当前范围内未查询到医院。',
-      '点击下方“进入定点推送页”可查看地图点位并一键导航。',
-    ].join('\n');
-  }
+  const copy =
+    locale === 'zh'
+      ? {
+          intro: '已根据你当前位置推荐附近医院（优先结核/呼吸相关）：',
+          current: '当前位置',
+          address: '地址',
+          unknownAddress: '未知地址',
+          phone: '电话',
+          noPhone: '暂无',
+          noHospitals: '当前范围内未查询到医院。',
+          cta: '点击下方“进入定点推送页”可查看地图点位并一键导航。',
+        }
+      : locale === 'th'
+        ? {
+            intro: 'แนะนำโรงพยาบาลใกล้เคียงตามตำแหน่งปัจจุบันของคุณแล้ว (เน้นโรควัณโรค/โรคระบบหายใจ):',
+            current: 'ตำแหน่งปัจจุบัน',
+            address: 'ที่อยู่',
+            unknownAddress: 'ไม่ทราบที่อยู่',
+            phone: 'โทรศัพท์',
+            noPhone: 'ไม่มีข้อมูล',
+            noHospitals: 'ไม่พบโรงพยาบาลในช่วงระยะนี้',
+            cta: 'กดปุ่ม “เปิดหน้าแผนที่จุดส่งต่อ” ด้านล่างเพื่อดูตำแหน่งและนำทาง',
+          }
+        : locale === 'id'
+          ? {
+              intro: 'Rumah sakit terdekat berdasarkan lokasi Anda telah direkomendasikan (prioritas TB/pernapasan):',
+              current: 'Lokasi saat ini',
+              address: 'Alamat',
+              unknownAddress: 'Alamat tidak diketahui',
+              phone: 'Telepon',
+              noPhone: 'Tidak tersedia',
+              noHospitals: 'Tidak ada rumah sakit pada rentang saat ini.',
+              cta: 'Klik tombol “Buka halaman peta rujukan” di bawah untuk melihat marker dan navigasi.',
+            }
+          : locale === 'ms'
+            ? {
+                intro: 'Hospital berdekatan berdasarkan lokasi semasa anda telah disyorkan (utamakan TB/pernafasan):',
+                current: 'Lokasi semasa',
+                address: 'Alamat',
+                unknownAddress: 'Alamat tidak diketahui',
+                phone: 'Telefon',
+                noPhone: 'Tiada',
+                noHospitals: 'Tiada hospital ditemui dalam julat semasa.',
+                cta: 'Klik butang “Buka halaman peta rujukan” di bawah untuk lihat penanda dan navigasi.',
+              }
+            : {
+                intro: 'Nearby designated hospitals have been recommended based on your current location:',
+                current: 'Current location',
+                address: 'Address',
+                unknownAddress: 'Unknown address',
+                phone: 'Phone',
+                noPhone: 'N/A',
+                noHospitals: 'No hospitals were found in the current range.',
+                cta: 'Use "Open designated map page" below for map markers and navigation.',
+              };
 
   const topHospitals = hospitals.slice(0, 5);
   const listText = topHospitals
     .map((hospital, index) => {
       return [
         `${index + 1}. ${hospital.name} (${formatDistance(hospital.distanceMeter, locale)})`,
-        `Address: ${hospital.address || 'Unknown address'}`,
-        `Phone: ${hospital.tel || 'N/A'}`,
+        `${copy.address}: ${hospital.address || copy.unknownAddress}`,
+        `${copy.phone}: ${hospital.tel || copy.noPhone}`,
       ].join('\n');
     })
     .join('\n');
 
   return [
-    'Nearby designated hospitals have been recommended based on your current location:',
-    `Current location: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
-    listText || 'No hospitals were found in the current range.',
-    'Use "Open designated map page" below for map markers and navigation.',
+    copy.intro,
+    `${copy.current}: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
+    listText || copy.noHospitals,
+    copy.cta,
   ].join('\n');
 }
 
 function buildHospitalFailureReply(error: unknown, locale: AppLocale) {
   const message = error instanceof Error ? error.message : String(error || '');
-
-  if (locale === 'zh') {
-    if (message.includes('MISSING_AMAP_WEB_KEY') || message.includes('MISSING_AMAP_JS_KEY') || message.includes('MISSING_AMAP_KEYS')) {
-      return '医院推荐失败：未配置高德 API Key。请先在环境变量配置后重试。';
-    }
-    if (message.includes('GEOLOCATION_INSECURE_CONTEXT')) {
-      return '医院推荐失败：当前页面不是安全上下文。请通过 HTTPS 或 localhost 访问并重试。';
-    }
-    if (message.includes('GEOLOCATION_DENIED')) {
-      return '医院推荐失败：定位权限被拒绝。请在浏览器地址栏权限设置中允许位置访问后重试。';
-    }
-    if (message.includes('GEOLOCATION_TIMEOUT')) {
-      return '医院推荐失败：定位超时。请在网络稳定后重试。';
-    }
-    if (message.includes('GEOLOCATION_UNAVAILABLE') || message.includes('GEOLOCATION_UNKNOWN')) {
-      return '医院推荐失败：无法获取设备定位，请检查系统定位服务是否开启。';
-    }
-    if (message.includes('10001') || message.includes('INVALID_USER_KEY')) {
-      return '医院推荐失败：高德 Key 无效或权限不足，请检查 Key 类型与绑定配置。';
-    }
-    if (message.includes('AMAP_HTTP_') || message.includes('Failed to fetch') || message.includes('NetworkError')) {
-      return '医院推荐失败：高德服务网络访问异常，请检查网络/代理后重试。';
-    }
-    return '医院推荐失败，请稍后重试。你仍可点击下方按钮进入定点推送页手动定位查询。';
-  }
+  const copy =
+    locale === 'zh'
+      ? {
+          missingKey: '医院推荐失败：未配置高德 API Key。请先在环境变量配置后重试。',
+          insecure: '医院推荐失败：当前页面不是安全上下文。请通过 HTTPS 或 localhost 访问并重试。',
+          denied: '医院推荐失败：定位权限被拒绝。请在浏览器地址栏权限设置中允许位置访问后重试。',
+          timeout: '医院推荐失败：定位超时。请在网络稳定后重试。',
+          unavailable: '医院推荐失败：无法获取设备定位，请检查系统定位服务是否开启。',
+          invalidKey: '医院推荐失败：高德 Key 无效或权限不足，请检查 Key 类型与绑定配置。',
+          network: '医院推荐失败：高德服务网络访问异常，请检查网络/代理后重试。',
+          fallback: '医院推荐失败，请稍后重试。你仍可点击下方按钮进入定点推送页手动定位查询。',
+        }
+      : locale === 'th'
+        ? {
+            missingKey: 'แนะนำโรงพยาบาลไม่สำเร็จ: ยังไม่ได้ตั้งค่า Amap API key',
+            insecure: 'แนะนำโรงพยาบาลไม่สำเร็จ: หน้านี้ไม่ใช่ secure context (โปรดใช้ HTTPS หรือ localhost)',
+            denied: 'แนะนำโรงพยาบาลไม่สำเร็จ: ถูกปฏิเสธสิทธิ์ตำแหน่ง',
+            timeout: 'แนะนำโรงพยาบาลไม่สำเร็จ: การระบุตำแหน่งหมดเวลา',
+            unavailable: 'แนะนำโรงพยาบาลไม่สำเร็จ: ไม่สามารถดึงตำแหน่งอุปกรณ์ได้',
+            invalidKey: 'แนะนำโรงพยาบาลไม่สำเร็จ: Amap key ไม่ถูกต้องหรือสิทธิ์ไม่พอ',
+            network: 'แนะนำโรงพยาบาลไม่สำเร็จ: เชื่อมต่อบริการ Amap ไม่ได้',
+            fallback: 'แนะนำโรงพยาบาลไม่สำเร็จ ลองใหม่อีกครั้ง หรือเปิดหน้าแผนที่จุดส่งต่อด้วยตนเอง',
+          }
+        : locale === 'id'
+          ? {
+              missingKey: 'Rekomendasi rumah sakit gagal: konfigurasi Amap API key belum ada.',
+              insecure: 'Rekomendasi rumah sakit gagal: halaman bukan secure context. Gunakan HTTPS atau localhost.',
+              denied: 'Rekomendasi rumah sakit gagal: izin lokasi ditolak.',
+              timeout: 'Rekomendasi rumah sakit gagal: lokasi timeout.',
+              unavailable: 'Rekomendasi rumah sakit gagal: lokasi perangkat tidak tersedia.',
+              invalidKey: 'Rekomendasi rumah sakit gagal: Amap key tidak valid atau izin kurang.',
+              network: 'Rekomendasi rumah sakit gagal: tidak dapat mengakses layanan Amap.',
+              fallback: 'Rekomendasi rumah sakit gagal. Anda tetap dapat membuka halaman peta rujukan.',
+            }
+          : locale === 'ms'
+            ? {
+                missingKey: 'Cadangan hospital gagal: konfigurasi Amap API key belum tersedia.',
+                insecure: 'Cadangan hospital gagal: halaman bukan secure context. Gunakan HTTPS atau localhost.',
+                denied: 'Cadangan hospital gagal: kebenaran lokasi ditolak.',
+                timeout: 'Cadangan hospital gagal: geolokasi tamat masa.',
+                unavailable: 'Cadangan hospital gagal: lokasi peranti tidak tersedia.',
+                invalidKey: 'Cadangan hospital gagal: Amap key tidak sah atau kebenaran tidak mencukupi.',
+                network: 'Cadangan hospital gagal: tidak dapat mencapai perkhidmatan Amap.',
+                fallback: 'Cadangan hospital gagal. Anda masih boleh buka halaman peta rujukan.',
+              }
+            : {
+                missingKey: 'Hospital recommendation failed: missing Amap API key configuration.',
+                insecure: 'Hospital recommendation failed: page is not in a secure context. Use HTTPS or localhost.',
+                denied: 'Hospital recommendation failed: location permission denied. Allow location access and retry.',
+                timeout: 'Hospital recommendation failed: location timeout. Please retry.',
+                unavailable: 'Hospital recommendation failed: location is unavailable on this device/browser.',
+                invalidKey: 'Hospital recommendation failed: invalid Amap key or insufficient permissions.',
+                network: 'Hospital recommendation failed: unable to reach Amap service. Check network/proxy.',
+                fallback: 'Hospital recommendation failed. You can still open the designated map page below.',
+              };
 
   if (message.includes('MISSING_AMAP_WEB_KEY') || message.includes('MISSING_AMAP_JS_KEY') || message.includes('MISSING_AMAP_KEYS')) {
-    return 'Hospital recommendation failed: missing Amap API key configuration.';
+    return copy.missingKey;
   }
-  if (message.includes('GEOLOCATION_INSECURE_CONTEXT')) {
-    return 'Hospital recommendation failed: page is not in a secure context. Use HTTPS or localhost.';
-  }
-  if (message.includes('GEOLOCATION_DENIED')) {
-    return 'Hospital recommendation failed: location permission denied. Allow location access and retry.';
-  }
-  if (message.includes('GEOLOCATION_TIMEOUT')) {
-    return 'Hospital recommendation failed: location timeout. Please retry.';
-  }
-  if (message.includes('GEOLOCATION_UNAVAILABLE') || message.includes('GEOLOCATION_UNKNOWN')) {
-    return 'Hospital recommendation failed: location is unavailable on this device/browser.';
-  }
-  if (message.includes('10001') || message.includes('INVALID_USER_KEY')) {
-    return 'Hospital recommendation failed: invalid Amap key or insufficient permissions.';
-  }
-  if (message.includes('AMAP_HTTP_') || message.includes('Failed to fetch') || message.includes('NetworkError')) {
-    return 'Hospital recommendation failed: unable to reach Amap service. Check network/proxy.';
-  }
-  return 'Hospital recommendation failed. You can still open the designated map page below.';
+  if (message.includes('GEOLOCATION_INSECURE_CONTEXT')) return copy.insecure;
+  if (message.includes('GEOLOCATION_DENIED')) return copy.denied;
+  if (message.includes('GEOLOCATION_TIMEOUT')) return copy.timeout;
+  if (message.includes('GEOLOCATION_UNAVAILABLE') || message.includes('GEOLOCATION_UNKNOWN')) return copy.unavailable;
+  if (message.includes('10001') || message.includes('INVALID_USER_KEY')) return copy.invalidKey;
+  if (message.includes('AMAP_HTTP_') || message.includes('Failed to fetch') || message.includes('NetworkError')) return copy.network;
+  return copy.fallback;
 }
 
 async function getHospitalRecommendation(locale: AppLocale) {
@@ -306,23 +457,39 @@ async function getHospitalRecommendation(locale: AppLocale) {
   saveNearbyHospitalsPayload(payload);
 
   if (hospitals.length === 0) {
-    if (locale === 'zh') {
-      return {
-        payload,
-        reply: [
-          '已完成定位，但当前范围内未检索到可展示医院。',
-          `当前位置：${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
-          '可点击下方“进入定点推送页”扩大范围继续查询。',
-        ].join('\n'),
-      };
-    }
+    const copy =
+      locale === 'zh'
+        ? [
+            '已完成定位，但当前范围内未检索到可展示医院。',
+            `当前位置：${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
+            '可点击下方“进入定点推送页”扩大范围继续查询。',
+          ]
+        : locale === 'th'
+          ? [
+              'ระบุตำแหน่งสำเร็จแล้ว แต่ไม่พบโรงพยาบาลในช่วงระยะปัจจุบัน',
+              `ตำแหน่งปัจจุบัน: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
+              'คุณสามารถเปิดหน้าแผนที่จุดส่งต่อด้านล่างเพื่อขยายระยะค้นหา',
+            ]
+          : locale === 'id'
+            ? [
+                'Lokasi berhasil didapatkan, tetapi tidak ada rumah sakit dalam rentang saat ini.',
+                `Lokasi saat ini: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
+                'Buka halaman peta rujukan di bawah untuk memperluas rentang pencarian.',
+              ]
+            : locale === 'ms'
+              ? [
+                  'Lokasi berjaya diperoleh, tetapi tiada hospital dalam julat semasa.',
+                  `Lokasi semasa: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
+                  'Buka halaman peta rujukan di bawah untuk meluaskan julat carian.',
+                ]
+              : [
+                  'Location acquired, but no hospitals were found in the current range.',
+                  `Current location: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
+                  'Open the designated map page below to expand the query range.',
+                ];
     return {
       payload,
-      reply: [
-        'Location acquired, but no hospitals were found in the current range.',
-        `Current location: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`,
-        'Open the designated map page below to expand the query range.',
-      ].join('\n'),
+      reply: copy.join('\n'),
     };
   }
 
@@ -498,7 +665,7 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
                   <div className="mt-3 pt-2 border-t border-gray-700/80 space-y-2">
                     <div className="text-[11px] text-gray-400 flex items-center gap-1">
                       <MapPin className="h-3 w-3" />
-                      {locale === 'zh' ? '点击按钮跳转定点推送页查看地图点位并导航' : 'Open the designated map page for markers and navigation'}
+                      {tr('点击按钮跳转定点推送页查看地图点位并导航')}
                     </div>
                     <div className="flex justify-end">
                       <button
@@ -506,7 +673,7 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
                         className="rounded border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-2 py-1 text-[11px] text-gray-300 hover:bg-[rgb(var(--bg))]"
                         onClick={openHospitalMap}
                       >
-                        {locale === 'zh' ? '进入定点推送页' : 'Open designated map page'}
+                        {tr('进入定点推送页')}
                       </button>
                     </div>
                   </div>

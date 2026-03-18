@@ -1,4 +1,6 @@
 export type PageId =
+  | 'clinicianOverview'
+  | 'patientCare'
   | 'enroll'
   | 'qa'
   | 'hospitalMap'

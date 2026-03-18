@@ -655,9 +655,9 @@
 .text-gray-100 { color: rgb(var(--fg)) !important; }
 .text-gray-200 { color: rgb(var(--fg)) !important; }
 .text-gray-300 { color: rgb(var(--fg) / 0.78) !important; }
-.text-gray-400 { color: rgb(var(--fg) / 0.68) !important; }
-.text-gray-500 { color: rgb(var(--fg) / 0.58) !important; }
-.text-gray-600 { color: rgb(var(--fg) / 0.46) !important; }
+.text-gray-400 { color: rgb(var(--fg) / 0.76) !important; }
+.text-gray-500 { color: rgb(var(--fg) / 0.66) !important; }
+.text-gray-600 { color: rgb(var(--fg) / 0.56) !important; }
 
   .gradient-text {
     background: linear-gradient(120deg, rgb(var(--accent)), rgb(var(--accent-hover)));
@@ -1065,10 +1065,14 @@
   .text-gray-200 {
     color: rgb(var(--fg)) !important;
   }
-  .text-gray-400,
-  .text-gray-500,
+  .text-gray-400 {
+    color: rgb(var(--fg) / 0.76) !important;
+  }
+  .text-gray-500 {
+    color: rgb(var(--fg) / 0.66) !important;
+  }
   .text-gray-600 {
-    color: rgb(var(--muted)) !important;
+    color: rgb(var(--fg) / 0.56) !important;
   }
   .bg-gray-700 {
     background-color: rgb(var(--card)) !important;

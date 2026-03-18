@@ -78,6 +78,10 @@ type BrowserWindowWithAmapSecurity = Window & {
   _AMapSecurityConfig?: { securityJsCode: string };
 };
 
+type BrowserWindowWithAmapGlobal = BrowserWindowWithAmapSecurity & {
+  AMap?: unknown;
+};
+
 export interface NearbyHospital {
   id: string;
   name: string;
@@ -100,6 +104,9 @@ const AMAP_SECURITY_JS_CODE = (
 ).trim();
 const AMAP_AROUND_API = 'https://restapi.amap.com/v3/place/around';
 const OSM_OVERPASS_API = 'https://overpass-api.de/api/interpreter';
+const AMAP_WEBAPI_SCRIPT = 'https://webapi.amap.com/maps';
+const AMAP_SCRIPT_ID = 'amap-jsapi-runtime';
+let amapSdkPromise: Promise<unknown> | null = null;
 
 export function getAmapRuntimeConfig() {
   return {
@@ -212,6 +219,128 @@ function mapJsPoi(raw: AmapJsPoiRaw, center: GeoPoint): NearbyHospital | null {
 function normalizeError(error: unknown) {
   if (error instanceof Error) return error;
   return new Error(String(error || 'UNKNOWN_ERROR'));
+}
+
+function ensureAmapSecurityConfig() {
+  if (!AMAP_SECURITY_JS_CODE || typeof window === 'undefined') return;
+  (window as BrowserWindowWithAmapSecurity)._AMapSecurityConfig = { securityJsCode: AMAP_SECURITY_JS_CODE };
+}
+
+function buildAmapScriptUrl(plugins: string[]) {
+  const params = new URLSearchParams({
+    v: '2.0',
+    key: AMAP_JS_KEY,
+  });
+  if (plugins.length > 0) {
+    params.set('plugin', plugins.join(','));
+  }
+  if (AMAP_SECURITY_JS_CODE) {
+    params.set('jscode', AMAP_SECURITY_JS_CODE);
+  }
+  return `${AMAP_WEBAPI_SCRIPT}?${params.toString()}`;
+}
+
+async function loadAmapByScriptTag(plugins: string[]) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    throw new Error('AMAP_JS_BROWSER_ONLY');
+  }
+
+  const browserWindow = window as BrowserWindowWithAmapGlobal;
+  if (browserWindow.AMap) return browserWindow.AMap;
+
+  const existing = document.getElementById(AMAP_SCRIPT_ID) as HTMLScriptElement | null;
+  if (existing) {
+    await new Promise<void>((resolve, reject) => {
+      const onLoad = () => resolve();
+      const onError = () => reject(new Error('AMAP_JS_SCRIPT_LOAD_FAILED'));
+      existing.addEventListener('load', onLoad, { once: true });
+      existing.addEventListener('error', onError, { once: true });
+    });
+    if (browserWindow.AMap) return browserWindow.AMap;
+    throw new Error('AMAP_JS_GLOBAL_MISSING');
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script');
+    script.id = AMAP_SCRIPT_ID;
+    script.async = true;
+    script.defer = true;
+    script.src = buildAmapScriptUrl(plugins);
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('AMAP_JS_SCRIPT_LOAD_FAILED'));
+    document.head.appendChild(script);
+  });
+
+  if (!browserWindow.AMap) {
+    throw new Error('AMAP_JS_GLOBAL_MISSING');
+  }
+
+  return browserWindow.AMap;
+}
+
+async function ensureAmapPlugins(amapInstance: unknown, plugins: string[]) {
+  const instance = amapInstance as Record<string, unknown> & {
+    plugin?: (plugins: string[], callback: () => void) => void;
+  };
+  if (plugins.length === 0) return;
+  const missing = plugins.filter((pluginName) => {
+    const ctorName = pluginName.split('.').pop() || pluginName;
+    return typeof instance[ctorName] !== 'function';
+  });
+  if (missing.length === 0) return;
+  if (typeof instance.plugin !== 'function') return;
+
+  await new Promise<void>((resolve, reject) => {
+    try {
+      instance.plugin?.(missing, () => resolve());
+      setTimeout(() => resolve(), 8000);
+    } catch (error) {
+      reject(error instanceof Error ? error : new Error(String(error || 'AMAP_PLUGIN_LOAD_FAILED')));
+    }
+  });
+}
+
+export async function loadAmapSdk(plugins: string[] = []) {
+  if (!AMAP_JS_KEY) {
+    throw new Error('MISSING_AMAP_JS_KEY');
+  }
+  if (typeof window === 'undefined') {
+    throw new Error('AMAP_JS_BROWSER_ONLY');
+  }
+
+  const pluginList = Array.from(
+    new Set(
+      plugins
+        .map((item) => item.trim())
+        .filter(Boolean)
+    )
+  );
+  ensureAmapSecurityConfig();
+
+  if (!amapSdkPromise) {
+    amapSdkPromise = AMapLoader.load({
+      key: AMAP_JS_KEY,
+      version: '2.0',
+      plugins: pluginList,
+    }).catch(async (loaderError) => {
+      const normalizedLoaderError = normalizeError(loaderError);
+      try {
+        return await loadAmapByScriptTag(pluginList);
+      } catch (scriptError) {
+        const normalizedScriptError = normalizeError(scriptError);
+        throw new Error(`AMAP_JS_LOAD_FAILED:${normalizedLoaderError.message};${normalizedScriptError.message}`);
+      }
+    });
+  }
+
+  try {
+    const amapRaw = await amapSdkPromise;
+    await ensureAmapPlugins(amapRaw, pluginList);
+    return amapRaw;
+  } catch (error) {
+    amapSdkPromise = null;
+    throw error;
+  }
 }
 
 function shouldFallbackToJsApi(error: Error) {
@@ -349,18 +478,10 @@ async function fetchNearbyHospitalsByJsApi(
     throw new Error('AMAP_JS_BROWSER_ONLY');
   }
 
-  if (AMAP_SECURITY_JS_CODE) {
-    (window as BrowserWindowWithAmapSecurity)._AMapSecurityConfig = { securityJsCode: AMAP_SECURITY_JS_CODE };
-  }
-
   const pageSize = Math.min(Math.max(options?.pageSize || 10, 1), 25);
   const radiusMeter = Math.min(Math.max(options?.radiusMeter || 5000, 1000), 50000);
 
-  const amapRaw = await AMapLoader.load({
-    key: AMAP_JS_KEY,
-    version: '2.0',
-    plugins: ['AMap.PlaceSearch'],
-  });
+  const amapRaw = await loadAmapSdk(['AMap.PlaceSearch']);
 
   const AMap = amapRaw as unknown as AmapJsNamespace;
   const placeSearch = new AMap.PlaceSearch({

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -30,9 +30,7 @@ function findMouthController(scene: THREE.Object3D) {
       names.find((k) => k.includes('mouth'));
 
     if (hitKey && morphIndex === null) {
-      const originalKey = Object.keys(dict).find(
-        (k) => k.toLowerCase() === hitKey
-      );
+      const originalKey = Object.keys(dict).find((k) => k.toLowerCase() === hitKey);
       if (originalKey) {
         morphMesh = mesh;
         morphIndex = dict[originalKey];
@@ -56,10 +54,7 @@ export function DoctorModel({ speaking }: { speaking: boolean }) {
   const gltf = useGLTF('/models/doctor.glb') as { scene: THREE.Group };
   const group = useRef<THREE.Group>(null);
 
-  const { morphMesh, morphIndex, jawBone } = useMemo(
-    () => findMouthController(gltf.scene),
-    [gltf.scene]
-  );
+  const { morphMesh, morphIndex, jawBone } = useMemo(() => findMouthController(gltf.scene), [gltf.scene]);
 
   const [mouth, setMouth] = useState(0);
 
@@ -74,31 +69,19 @@ export function DoctorModel({ speaking }: { speaking: boolean }) {
     if (group.current) {
       group.current.position.y = Math.sin(state.clock.elapsedTime * 1.2) * 0.01;
       const targetNod = speaking ? 0.08 : 0.0;
-      group.current.rotation.x = THREE.MathUtils.lerp(
-        group.current.rotation.x,
-        targetNod,
-        0.08
-      );
+      group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, targetNod, 0.08);
     }
 
     if (morphMesh && morphIndex !== null) {
       const influences = (morphMesh as THREE.Mesh & { morphTargetInfluences?: number[] }).morphTargetInfluences;
       if (Array.isArray(influences)) {
-        influences[morphIndex] = THREE.MathUtils.lerp(
-          influences[morphIndex] ?? 0,
-          mouth,
-          0.35
-        );
+        influences[morphIndex] = THREE.MathUtils.lerp(influences[morphIndex] ?? 0, mouth, 0.35);
       }
     }
 
     if (jawBone) {
       const target = -0.35 * mouth;
-      (jawBone as THREE.Bone).rotation.x = THREE.MathUtils.lerp(
-        (jawBone as THREE.Bone).rotation.x,
-        target,
-        0.35
-      );
+      (jawBone as THREE.Bone).rotation.x = THREE.MathUtils.lerp((jawBone as THREE.Bone).rotation.x, target, 0.35);
     }
   });
 
@@ -145,9 +128,7 @@ export function DigitalHumanQA() {
         <div className="flex items-center gap-2 text-sm text-gray-300">
           <MessageCircle className="h-4 w-4 text-teal-400" />
           {tr('数字人问答')}
-          <span className="text-xs text-gray-500">
-            {tr('（模型无嘴部控制器，使用点头/呼吸表示说话）')}
-          </span>
+          <span className="text-xs text-gray-500">{tr('（模型无嘴部控制器，使用点头/呼吸表示说话）')}</span>
         </div>
 
         <div className={uiStyles.card.default + ' space-y-2'}>
@@ -161,10 +142,7 @@ export function DigitalHumanQA() {
             <button
               onClick={handleAsk}
               disabled={loading}
-              className={
-                uiStyles.button.primary +
-                ' flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed'
-              }
+              className={uiStyles.button.primary + ' flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed'}
             >
               <Mic className="h-4 w-4" />
               {tr('提问并朗读')}
@@ -193,11 +171,10 @@ export function DigitalHumanQA() {
       <div className="flex flex-col items-center gap-2">
         <DigitalHumanAvatar speaking={speaking} />
         <div className="text-xs text-gray-500">
-          {tr('状态：')}{speaking ? tr('正在朗读') : tr('待机')}
+          {tr('状态：')}
+          {speaking ? tr('正在朗读') : tr('待机')}
         </div>
-        <div className="text-[11px] text-gray-500 text-center">
-          {tr('提示：本模型无口型控制，已用点头 + 呼吸模拟“说话”。')}
-        </div>
+        <div className="text-[11px] text-gray-500 text-center">{tr('提示：本模型无口型控制，已用点头 + 呼吸模拟“说话”。')}</div>
       </div>
     </div>
   );
@@ -215,10 +192,7 @@ export function DigitalHumanAvatar({ speaking }: { speaking: boolean }) {
         }
       >
         <div className="w-full flex justify-center py-2">
-          <div
-            className="rounded-lg overflow-hidden border border-gray-700"
-            style={{ width: 400, height: 540 }}
-          >
+          <div className="rounded-lg overflow-hidden border border-gray-700" style={{ width: 400, height: 540 }}>
             <Canvas camera={{ position: [0, 0.6, 3.2], fov: 35 }}>
               <ambientLight intensity={0.7} />
               <directionalLight position={[3, 5, 2]} intensity={1.0} />
