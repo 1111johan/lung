@@ -1,6 +1,7 @@
 ﻿"use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Component, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
@@ -11,6 +12,34 @@ import { MessageCircle, Mic, Pause } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 
 useGLTF.preload('/models/doctor.glb');
+
+interface CanvasErrorBoundaryProps {
+  children: ReactNode;
+  fallback: ReactNode;
+}
+
+interface CanvasErrorBoundaryState {
+  hasError: boolean;
+}
+
+class CanvasErrorBoundary extends Component<CanvasErrorBoundaryProps, CanvasErrorBoundaryState> {
+  state: CanvasErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('DigitalHuman canvas crashed:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
 
 function findMouthController(scene: THREE.Object3D) {
   let morphMesh: THREE.Mesh | null = null;
@@ -191,17 +220,25 @@ export function DigitalHumanAvatar({ speaking }: { speaking: boolean }) {
           </div>
         }
       >
-        <div className="w-full flex justify-center py-2">
-          <div className="rounded-lg overflow-hidden border border-gray-700" style={{ width: 400, height: 540 }}>
-            <Canvas camera={{ position: [0, 0.6, 3.2], fov: 35 }}>
-              <ambientLight intensity={0.7} />
-              <directionalLight position={[3, 5, 2]} intensity={1.0} />
-              <directionalLight position={[-3, 2, 2]} intensity={0.5} />
-              <DoctorModel speaking={speaking} />
-              <OrbitControls enablePan={false} target={[0, 0.3, 0]} />
-            </Canvas>
+        <CanvasErrorBoundary
+          fallback={
+            <div className="h-[520px] flex items-center justify-center text-gray-400 text-sm">
+              {tr('模型加载失败，请刷新页面后重试')}
+            </div>
+          }
+        >
+          <div className="w-full flex justify-center py-2">
+            <div className="rounded-lg overflow-hidden border border-gray-700" style={{ width: 400, height: 540 }}>
+              <Canvas camera={{ position: [0, 0.6, 3.2], fov: 35 }}>
+                <ambientLight intensity={0.7} />
+                <directionalLight position={[3, 5, 2]} intensity={1.0} />
+                <directionalLight position={[-3, 2, 2]} intensity={0.5} />
+                <DoctorModel speaking={speaking} />
+                <OrbitControls enablePan={false} target={[0, 0.3, 0]} />
+              </Canvas>
+            </div>
           </div>
-        </div>
+        </CanvasErrorBoundary>
       </Suspense>
     </div>
   );
