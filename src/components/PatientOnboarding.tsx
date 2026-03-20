@@ -793,20 +793,21 @@ export function PatientOnboarding() {
                           )}
 
                           {field.type === 'checkbox' && (
-                            <label className={`hp-check ${currentValue === true ? 'hp-check-active' : ''}`} htmlFor={field.name}>
-                              <input
-                                id={field.name}
-                                type="checkbox"
-                                checked={currentValue === true}
-                                onChange={(e) => setFieldValue(field.name, e.target.checked)}
-                                className="sr-only"
-                              />
-                              <span className="hp-check-indicator">{currentValue === true ? '✓' : ''}</span>
+                            <button
+                              type="button"
+                              role="checkbox"
+                              aria-checked={currentValue === true}
+                              onClick={() => setFieldValue(field.name, currentValue !== true)}
+                              className={`hp-check ${currentValue === true ? 'hp-check-active' : ''}`}
+                            >
+                              <span className="hp-check-indicator" aria-hidden="true">
+                                {currentValue === true ? '✓' : ''}
+                              </span>
                               <span>
                                 {field.label}
                                 {field.required ? <span className="hp-required">*</span> : null}
                               </span>
-                            </label>
+                            </button>
                           )}
                         </div>
                       );
