@@ -5,6 +5,7 @@ const API_BASE =
   import.meta.env.VITE_DEEPSEEK_API_BASE ||
   import.meta.env.VITE_DEEPSEEK_BASE_URL ||
   'https://api.deepseek.com';
+const AI_PROXY_URL = (import.meta.env.VITE_AI_PROXY_URL || '').trim();
 const MODEL = import.meta.env.VITE_DEEPSEEK_MODEL || 'deepseek-chat';
 const PUBLIC_MODEL_NAME = (import.meta.env.VITE_PUBLIC_MODEL_NAME || 'clawlung模型').trim();
 const rawTimeoutMs = Number(import.meta.env.VITE_DEEPSEEK_TIMEOUT_MS || 20000);
@@ -18,6 +19,13 @@ interface DeepseekChoice {
 }
 
 interface DeepseekResp {
+  choices?: DeepseekChoice[];
+}
+
+interface ProxyResp {
+  reply?: string;
+  answer?: string;
+  content?: string;
   choices?: DeepseekChoice[];
 }
 
@@ -67,6 +75,14 @@ const fallbackServiceError: Record<AppLocale, string> = {
   ms: 'Perkhidmatan AI tidak tersedia buat masa ini. Sila cuba lagi kemudian.',
 };
 
+const missingConfigError: Record<AppLocale, string> = {
+  zh: '智能问答未配置可用密钥，请联系管理员配置后重试。',
+  en: 'AI Q&A is not configured. Please contact admin and try again.',
+  th: 'ระบบถามตอบยังไม่ได้ตั้งค่า โปรดติดต่อผู้ดูแลระบบ',
+  id: 'Layanan tanya jawab belum dikonfigurasi. Hubungi admin.',
+  ms: 'Sistem soal jawab belum dikonfigurasi. Hubungi pentadbir.',
+};
+
 function sanitizeAnswer(text: string) {
   const withoutBold = text.replace(/\*\*/g, '');
   return withoutBold
@@ -80,6 +96,63 @@ function sanitizeAndMaskAnswer(text: string) {
   return sanitizeAnswer(text).replace(/\bdeep[\s_-]?seek(?:[\s_-]?(?:chat|coder|reasoner))?\b/gi, PUBLIC_MODEL_NAME);
 }
 
+function toStringValue(value: unknown) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+function extractAssistantContent(payload: unknown) {
+  const data = payload as ProxyResp | null | undefined;
+  if (!data || typeof data !== 'object') return '';
+  const fromChoices = toStringValue(data.choices?.[0]?.message?.content);
+  if (fromChoices) return fromChoices;
+  const fromReply = toStringValue(data.reply);
+  if (fromReply) return fromReply;
+  const fromAnswer = toStringValue(data.answer);
+  if (fromAnswer) return fromAnswer;
+  return toStringValue(data.content);
+}
+
+function normalizeApiBaseUrl(base: string) {
+  return base.trim().replace(/\/+$/, '');
+}
+
+function buildDirectEndpointCandidates(base: string) {
+  const normalized = normalizeApiBaseUrl(base);
+  if (!normalized) return [];
+  if (/\/v\d+$/i.test(normalized)) {
+    return [`${normalized}/chat/completions`];
+  }
+  return [`${normalized}/v1/chat/completions`, `${normalized}/chat/completions`];
+}
+
+function isRetryableNetworkError(error: unknown) {
+  if (error instanceof DOMException && error.name === 'AbortError') return true;
+  if (!(error instanceof Error)) return false;
+  const text = error.message.toLowerCase();
+  return (
+    text.includes('failed to fetch') ||
+    text.includes('networkerror') ||
+    text.includes('network request failed') ||
+    text.includes('http2') ||
+    text.includes('protocol')
+  );
+}
+
+async function requestJsonWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+      cache: 'no-store',
+    });
+  } finally {
+    globalThis.clearTimeout(timeoutId);
+  }
+}
+
 export async function askDeepseek(
   question: string,
   context?: string,
@@ -90,8 +163,8 @@ export async function askDeepseek(
     return sanitizeAndMaskAnswer(buildFallback('', context, locale));
   }
 
-  if (!API_KEY) {
-    return sanitizeAndMaskAnswer(buildFallback(normalizedQuestion, context, locale));
+  if (!API_KEY && !AI_PROXY_URL) {
+    return sanitizeAndMaskAnswer(missingConfigError[locale]);
   }
 
   const promptLabels = userPromptPrefix[locale];
@@ -108,36 +181,83 @@ export async function askDeepseek(
     },
   ];
 
-  const controller = new AbortController();
-  const timeoutId = globalThis.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const requestBody = {
+    model: MODEL,
+    messages,
+    temperature: 0.4,
+    max_tokens: 600,
+  };
 
-  try {
-    const resp = await fetch(`${API_BASE}/v1/chat/completions`, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages,
-        temperature: 0.4,
-        max_tokens: 600,
-      }),
-    });
-
-    if (!resp.ok) {
+  if (AI_PROXY_URL) {
+    try {
+      const resp = await requestJsonWithTimeout(
+        AI_PROXY_URL,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        },
+        REQUEST_TIMEOUT_MS
+      );
+      if (!resp.ok) return sanitizeAndMaskAnswer(fallbackServiceError[locale]);
+      const data = (await resp.json()) as ProxyResp;
+      const content = extractAssistantContent(data);
+      return sanitizeAndMaskAnswer(content || fallbackServiceError[locale]);
+    } catch {
       return sanitizeAndMaskAnswer(fallbackServiceError[locale]);
     }
+  }
 
-    const data = (await resp.json()) as DeepseekResp;
-    const content = data.choices?.[0]?.message?.content?.trim();
-    return sanitizeAndMaskAnswer(content || buildFallback(normalizedQuestion, context, locale));
+  if (!API_KEY) {
+    return sanitizeAndMaskAnswer(fallbackServiceError[locale]);
+  }
+
+  const directEndpoints = buildDirectEndpointCandidates(API_BASE);
+  if (directEndpoints.length === 0) {
+    return sanitizeAndMaskAnswer(fallbackServiceError[locale]);
+  }
+
+  try {
+    for (const endpoint of directEndpoints) {
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const resp = await requestJsonWithTimeout(
+            endpoint,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                Authorization: `Bearer ${API_KEY || ''}`,
+              },
+              body: JSON.stringify(requestBody),
+            },
+            REQUEST_TIMEOUT_MS
+          );
+
+          if (resp.ok) {
+            const data = (await resp.json()) as DeepseekResp;
+            const content = extractAssistantContent(data);
+            return sanitizeAndMaskAnswer(content || fallbackServiceError[locale]);
+          }
+
+          // Auth / quota / input errors generally won't recover by retrying.
+          if (resp.status >= 400 && resp.status < 500 && resp.status !== 429) {
+            return sanitizeAndMaskAnswer(fallbackServiceError[locale]);
+          }
+        } catch (error) {
+          if (!isRetryableNetworkError(error)) {
+            break;
+          }
+        }
+      }
+    }
+    return sanitizeAndMaskAnswer(fallbackServiceError[locale]);
   } catch {
     return sanitizeAndMaskAnswer(fallbackServiceError[locale]);
-  } finally {
-    globalThis.clearTimeout(timeoutId);
   }
 }
 
