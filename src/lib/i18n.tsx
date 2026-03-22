@@ -249,6 +249,7 @@ const en: Record<string, string> = {
   '你好，这里是广西医科大学 TB 科智能助手，提供科普与流程建议，不替代线下诊断。':
     'Hello, this is the GXMU TB assistant. It provides educational and workflow guidance and does not replace in-person diagnosis.',
   '已上传附件': 'Attachment uploaded',
+  '附件信息': 'Attachment info',
   '仅供科普与流程建议，不替代医生诊断': 'For education/workflow guidance only, not a diagnosis.',
   '生成回答中...': 'Generating response...',
   '移除': 'Remove',
@@ -257,6 +258,8 @@ const en: Record<string, string> = {
   '上传语音': 'Upload audio',
   '上传视频': 'Upload video',
   '输入问题，支持多种附件': 'Enter question, supports multiple attachments',
+  '请分析我上传的附件并给出建议': 'Please analyze my uploaded attachment and provide suggestions.',
+  '拖拽文件到这里，松开即可吸附上传': 'Drop files here and release to snap-upload',
   '发送': 'Send',
   '停止朗读': 'Stop reading',
   '数字人正在朗读': 'Digital human is reading',

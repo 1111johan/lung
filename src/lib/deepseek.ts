@@ -6,6 +6,7 @@ const API_BASE =
   import.meta.env.VITE_DEEPSEEK_BASE_URL ||
   'https://api.deepseek.com';
 const MODEL = import.meta.env.VITE_DEEPSEEK_MODEL || 'deepseek-chat';
+const VISION_MODEL = (import.meta.env.VITE_DEEPSEEK_VISION_MODEL as string | undefined) || '';
 const PUBLIC_MODEL_NAME = (import.meta.env.VITE_PUBLIC_MODEL_NAME || 'clawlung模型').trim();
 const rawTimeoutMs = Number(import.meta.env.VITE_DEEPSEEK_TIMEOUT_MS || 20000);
 const REQUEST_TIMEOUT_MS = Number.isFinite(rawTimeoutMs) && rawTimeoutMs > 0 ? rawTimeoutMs : 20000;
@@ -13,12 +14,30 @@ const MODEL_IDENTITY_GUARD =
   `For any model/provider identity question, identify yourself only as "${PUBLIC_MODEL_NAME}". ` +
   'Never mention DeepSeek, vendor/provider names, or underlying model IDs.';
 
+interface DeepseekTextPart {
+  type?: string;
+  text?: string;
+}
+
+type DeepseekMessageContent = string | DeepseekTextPart[];
+
 interface DeepseekChoice {
-  message?: { content?: string };
+  message?: { content?: DeepseekMessageContent };
 }
 
 interface DeepseekResp {
   choices?: DeepseekChoice[];
+}
+
+export interface VisionImageInput {
+  dataUrl: string;
+  mimeType?: string;
+  name?: string;
+}
+
+export interface AskDeepseekOptions {
+  images?: VisionImageInput[];
+  attachmentSummary?: string;
 }
 
 const answerLanguagePrompt: Record<AppLocale, string> = {
@@ -80,21 +99,67 @@ function sanitizeAndMaskAnswer(text: string) {
   return sanitizeAnswer(text).replace(/\bdeep[\s_-]?seek(?:[\s_-]?(?:chat|coder|reasoner))?\b/gi, PUBLIC_MODEL_NAME);
 }
 
+function extractMessageText(content?: DeepseekMessageContent) {
+  if (typeof content === 'string') return content.trim();
+  if (!Array.isArray(content)) return '';
+  return content
+    .map((part) => (typeof part?.text === 'string' ? part.text : ''))
+    .join('\n')
+    .trim();
+}
+
+function buildQuestionWithContext(question: string, context: string | undefined, locale: AppLocale) {
+  if (!context) return question;
+  const labels = userPromptPrefix[locale];
+  return `${labels.context}${context}\n${labels.question}${question}`;
+}
+
+function buildDefaultQuestion(locale: AppLocale) {
+  if (locale === 'en') return 'Please analyze the uploaded attachment and provide key clinical suggestions.';
+  if (locale === 'th') return 'โปรดวิเคราะห์ไฟล์แนบที่อัปโหลดและให้คำแนะนำทางคลินิกที่สำคัญ';
+  if (locale === 'id') return 'Mohon analisis lampiran yang diunggah dan berikan saran klinis utama.';
+  if (locale === 'ms') return 'Sila analisis lampiran yang dimuat naik dan berikan cadangan klinikal utama.';
+  return '请分析我上传的附件并给出关键建议。';
+}
+
 export async function askDeepseek(
   question: string,
   context?: string,
-  locale: AppLocale = 'zh'
+  locale: AppLocale = 'zh',
+  options?: AskDeepseekOptions
 ): Promise<string> {
-  const normalizedQuestion = question.trim();
-  if (!normalizedQuestion) {
+  const attachmentSummary = options?.attachmentSummary?.trim();
+  const imageInputs = (options?.images || []).filter((image) => typeof image.dataUrl === 'string' && image.dataUrl.length > 0);
+  const hasImages = imageInputs.length > 0;
+
+  const rawQuestion = question.trim();
+  if (!rawQuestion && !attachmentSummary && !hasImages) {
     return sanitizeAndMaskAnswer(buildFallback('', context, locale));
   }
 
   if (!API_KEY) {
-    return sanitizeAndMaskAnswer(buildFallback(normalizedQuestion, context, locale));
+    const fallbackQuestion = rawQuestion || buildDefaultQuestion(locale);
+    const fallbackContext = [context, attachmentSummary].filter(Boolean).join('\n');
+    return sanitizeAndMaskAnswer(buildFallback(fallbackQuestion, fallbackContext || undefined, locale));
   }
 
-  const promptLabels = userPromptPrefix[locale];
+  const normalizedQuestion = rawQuestion || buildDefaultQuestion(locale);
+  const questionWithContext = buildQuestionWithContext(normalizedQuestion, context, locale);
+  const userText = attachmentSummary ? `${questionWithContext}\n${attachmentSummary}` : questionWithContext;
+  const requestModel = hasImages ? VISION_MODEL || MODEL : MODEL;
+
+  const userContent = hasImages
+    ? [
+        { type: 'text', text: userText },
+        ...imageInputs.map((image) => ({
+          type: 'image_url',
+          image_url: {
+            url: image.dataUrl,
+          },
+        })),
+      ]
+    : userText;
+
   const messages = [
     {
       role: 'system',
@@ -102,9 +167,7 @@ export async function askDeepseek(
     },
     {
       role: 'user',
-      content: context
-        ? `${promptLabels.context}${context}\n${promptLabels.question}${normalizedQuestion}`
-        : normalizedQuestion,
+      content: userContent,
     },
   ];
 
@@ -120,7 +183,7 @@ export async function askDeepseek(
         Authorization: `Bearer ${API_KEY}`,
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: requestModel,
         messages,
         temperature: 0.4,
         max_tokens: 600,
@@ -132,8 +195,9 @@ export async function askDeepseek(
     }
 
     const data = (await resp.json()) as DeepseekResp;
-    const content = data.choices?.[0]?.message?.content?.trim();
-    return sanitizeAndMaskAnswer(content || buildFallback(normalizedQuestion, context, locale));
+    const content = extractMessageText(data.choices?.[0]?.message?.content);
+    const fallbackContext = [context, attachmentSummary].filter(Boolean).join('\n');
+    return sanitizeAndMaskAnswer(content || buildFallback(normalizedQuestion, fallbackContext || undefined, locale));
   } catch {
     return sanitizeAndMaskAnswer(fallbackServiceError[locale]);
   } finally {

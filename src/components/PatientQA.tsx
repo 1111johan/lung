@@ -16,6 +16,7 @@ import { uiStyles } from '../lib/theme';
 import { askDeepseek } from '../lib/deepseek';
 import { DigitalHumanAvatar } from './DigitalHuman';
 import { speakText, stopSpeaking } from '../lib/voice';
+import type { ChangeEvent, DragEvent } from 'react';
 import { useI18n, type AppLocale } from '../lib/i18n';
 import { fetchNearbyHospitals, getAmapConfigStatus, type GeoPoint, type NearbyHospital } from '../lib/amap';
 import { getCurrentPositionWithBrowserFallback } from '../lib/location';
@@ -40,7 +41,56 @@ interface Attachment {
   name: string;
   size: string;
   kind: AttachmentKind;
+  rawFile?: File;
 }
+
+const imageExtSet = new Set(['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg', 'heic', 'heif', 'avif']);
+const audioExtSet = new Set(['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac', 'amr', 'opus']);
+const videoExtSet = new Set(['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v', '3gp', 'wmv', 'flv']);
+const MAX_VISION_IMAGES = 3;
+const MAX_VISION_IMAGE_BYTES = 10 * 1024 * 1024;
+
+const getFileExt = (fileName: string) => {
+  const dotIndex = fileName.lastIndexOf('.');
+  if (dotIndex < 0 || dotIndex === fileName.length - 1) return '';
+  return fileName.slice(dotIndex + 1).toLowerCase();
+};
+
+const inferAttachmentKind = (file: File): AttachmentKind => {
+  const mime = (file.type || '').toLowerCase();
+
+  if (mime.startsWith('image/')) return 'image';
+  if (mime.startsWith('audio/')) return 'audio';
+  if (mime.startsWith('video/')) return 'video';
+
+  const ext = getFileExt(file.name);
+  if (imageExtSet.has(ext)) return 'image';
+  if (audioExtSet.has(ext)) return 'audio';
+  if (videoExtSet.has(ext)) return 'video';
+
+  return 'doc';
+};
+
+const hasDraggedFiles = (event: DragEvent<HTMLElement>) => {
+  if (event.dataTransfer.items.length > 0) {
+    return Array.from(event.dataTransfer.items).some((item) => item.kind === 'file');
+  }
+  return event.dataTransfer.files.length > 0;
+};
+
+const fileToDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error('UNSUPPORTED_FILE_READER_RESULT'));
+    };
+    reader.onerror = () => reject(reader.error || new Error('FILE_READER_ERROR'));
+    reader.readAsDataURL(file);
+  });
 
 const quickQuestions = [
   '咳嗽≥2周、夜间盗汗、体重下降是结核的典型组合吗？',
@@ -512,12 +562,14 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
   const [loading, setLoading] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isDragActive, setIsDragActive] = useState(false);
   const [latestHospitalPayload, setLatestHospitalPayload] = useState<NearbyHospitalsMapPayload | null>(null);
 
   const docInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const dragDepthRef = useRef(0);
 
   const formatSize = (size: number) => {
     if (size < 1024) return `${size} B`;
@@ -527,15 +579,76 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
     return `${mb.toFixed(1)} MB`;
   };
 
+  const appendFiles = (files: FileList | File[], resolveKind: (file: File) => AttachmentKind) => {
+    const fileArray = Array.isArray(files) ? files : Array.from(files);
+    if (fileArray.length === 0) return;
+
+    const stamp = Date.now();
+    const next = fileArray.map((file, index) => {
+      const kind = resolveKind(file);
+      return {
+        id: `${kind}-${file.name}-${stamp}-${index}-${Math.random().toString(36).slice(2, 6)}`,
+        name: file.name,
+        size: formatSize(file.size),
+        kind,
+        rawFile: file,
+      };
+    });
+    setAttachments((prev) => [...prev, ...next]);
+  };
+
   const handleFiles = (kind: AttachmentKind, files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const next = Array.from(files).map((file) => ({
-      id: `${kind}-${file.name}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      name: file.name,
-      size: formatSize(file.size),
-      kind,
-    }));
-    setAttachments((prev) => [...prev, ...next]);
+    appendFiles(files, () => kind);
+  };
+
+  const handleFileInputChange = (kind: AttachmentKind, event: ChangeEvent<HTMLInputElement>) => {
+    handleFiles(kind, event.target.files);
+    event.target.value = '';
+  };
+
+  const handleDroppedFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    appendFiles(files, inferAttachmentKind);
+  };
+
+  const resetDragState = () => {
+    dragDepthRef.current = 0;
+    setIsDragActive(false);
+  };
+
+  const handleComposerDragEnter = (event: DragEvent<HTMLDivElement>) => {
+    if (!hasDraggedFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragDepthRef.current += 1;
+    setIsDragActive(true);
+  };
+
+  const handleComposerDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (!hasDraggedFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'copy';
+    if (!isDragActive) setIsDragActive(true);
+  };
+
+  const handleComposerDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleComposerDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.dataTransfer.files.length > 0) {
+      handleDroppedFiles(event.dataTransfer.files);
+    }
+    resetDragState();
   };
 
   const removeAttachment = (id: string) => {
@@ -561,16 +674,53 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
     window.location.assign('/nearby-hospitals/map');
   };
 
+  const buildAttachmentSummary = (items: Attachment[]) => {
+    if (items.length === 0) return '';
+    const summary = items
+      .map((item) => `${attachmentLabel(item.kind, tr)}: ${item.name} (${item.size})`)
+      .join('；');
+    return `${tr('附件信息')}：${summary}`;
+  };
+
+  const buildVisionInputs = async (items: Attachment[]) => {
+    const imageFiles = items
+      .filter((item) => item.kind === 'image' && item.rawFile && item.rawFile.size <= MAX_VISION_IMAGE_BYTES)
+      .slice(0, MAX_VISION_IMAGES);
+
+    if (imageFiles.length === 0) return [];
+
+    const converted = await Promise.all(
+      imageFiles.map(async (item) => {
+        try {
+          const dataUrl = await fileToDataUrl(item.rawFile as File);
+          return {
+            dataUrl,
+            mimeType: item.rawFile?.type,
+            name: item.name,
+          };
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    return converted.filter((item): item is NonNullable<typeof item> => Boolean(item));
+  };
+
   const send = async (text: string) => {
     if (loading) return;
 
     const q = text.trim();
-    if (!q && attachments.length === 0) return;
+    const pendingAttachments = attachments;
+    if (!q && pendingAttachments.length === 0) return;
+
+    const effectiveQuestion = q || tr('请分析我上传的附件并给出建议');
+    const outgoingAttachments = pendingAttachments.map(({ rawFile: _rawFile, ...meta }) => meta);
 
     const outgoing: ChatItem = {
       sender: 'user',
       text: q || tr('已上传附件'),
-      attachments: attachments.length ? attachments : undefined,
+      attachments: outgoingAttachments.length ? outgoingAttachments : undefined,
     };
 
     setMessages((prev) => [...prev, outgoing]);
@@ -579,7 +729,7 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
     setLoading(true);
 
     try {
-      const isHospitalQuery = isHospitalIntent(q);
+      const isHospitalQuery = isHospitalIntent(effectiveQuestion);
       let reply = '';
       let showHospitalMapButton = false;
 
@@ -593,14 +743,21 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
           reply = buildHospitalFailureReply(error, locale);
         }
       } else {
-        reply = await askDeepseek(q, undefined, locale);
+        const [visionInputs, attachmentSummary] = await Promise.all([
+          buildVisionInputs(pendingAttachments),
+          Promise.resolve(buildAttachmentSummary(pendingAttachments)),
+        ]);
+        reply = await askDeepseek(effectiveQuestion, undefined, locale, {
+          images: visionInputs,
+          attachmentSummary: attachmentSummary || undefined,
+        });
       }
 
       setMessages((prev) => {
         const botMessage: ChatItem = {
           sender: 'bot',
           text: reply,
-          followUps: buildFollowupQuestions(reply, q, locale),
+          followUps: buildFollowupQuestions(reply, effectiveQuestion, locale),
           showHospitalMapButton,
         };
         return [...prev, botMessage];
@@ -615,7 +772,7 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
       const fallback = tr('当前问答服务暂不可用，请稍后重试。');
       setMessages((prev) => [
         ...prev,
-        { sender: 'bot', text: fallback, followUps: buildFollowupQuestions(fallback, q, locale) },
+        { sender: 'bot', text: fallback, followUps: buildFollowupQuestions(fallback, effectiveQuestion, locale) },
       ]);
     } finally {
       setLoading(false);
@@ -701,7 +858,20 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
           {loading && <div className="text-xs text-gray-500">{tr('生成回答中...')}</div>}
         </div>
 
-        <div className="p-3 border-t border-gray-700 space-y-2">
+        <div
+          className={`p-3 border-t border-gray-700 space-y-2 transition-colors ${
+            isDragActive ? 'bg-teal-500/10' : ''
+          }`}
+          onDragEnter={handleComposerDragEnter}
+          onDragOver={handleComposerDragOver}
+          onDragLeave={handleComposerDragLeave}
+          onDrop={handleComposerDrop}
+        >
+          {isDragActive && (
+            <div className="rounded-xl border border-dashed border-teal-400/80 bg-teal-500/10 px-3 py-2 text-xs text-teal-100">
+              {tr('拖拽文件到这里，松开即可吸附上传')}
+            </div>
+          )}
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {attachments.map((file) => (
@@ -797,7 +967,7 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
             accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
             className="hidden"
             multiple
-            onChange={(e) => handleFiles('doc', e.target.files)}
+            onChange={(e) => handleFileInputChange('doc', e)}
           />
           <input
             ref={imageInputRef}
@@ -805,7 +975,7 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
             accept="image/*"
             className="hidden"
             multiple
-            onChange={(e) => handleFiles('image', e.target.files)}
+            onChange={(e) => handleFileInputChange('image', e)}
           />
           <input
             ref={audioInputRef}
@@ -813,7 +983,7 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
             accept="audio/*"
             className="hidden"
             multiple
-            onChange={(e) => handleFiles('audio', e.target.files)}
+            onChange={(e) => handleFileInputChange('audio', e)}
           />
           <input
             ref={videoInputRef}
@@ -821,7 +991,7 @@ export function PatientQA({ onOpenHospitalMap }: PatientQAProps) {
             accept="video/*"
             className="hidden"
             multiple
-            onChange={(e) => handleFiles('video', e.target.files)}
+            onChange={(e) => handleFileInputChange('video', e)}
           />
         </div>
       </div>
